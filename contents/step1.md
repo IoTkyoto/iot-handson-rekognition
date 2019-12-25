@@ -1,0 +1,829 @@
+# ステップ1. 顔認識用のコレクションを作成する（スマートフォンとAWSサービスを用いた画像認識サービスの構築する）
+
+*当コンテンツは、エッジデバイスとしてスマートフォン、クラウドサービスとしてAWSを利用し、エッジデバイスとクラウド間とのデータ連携とAWSサービスを利用した画像認識を体験し、IoT/画像認識システムの基礎的な技術の習得を目指す方向けのハンズオン(体験学習)コンテンツ「[スマートフォンとAWSサービスを用いた画像認識サービスの構築する](https://qiita.com/kyoso_bizdev/private/e5c252f08de019ab8a1b)」の一部です。*
+
+# ステップ1. 顔認識用のコレクションを作成する
+
+![ステップ1アーキテクチャ図](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/architecture_step1.png)
+
+ステップ1では、画像に写っている人物を特定するために必要なコレクションを作成します。
+AWS Rekognitionサービスでは、コレクションの情報を使って、画像内に誰が写っているのかを特定する機能があります。
+
+まずは、画像のアップロード先として「[**Amazon S3（以下、S3）**](https://aws.amazon.com/jp/s3)」にバケットを作成し、登録したい人物が１人で写っている画像をAWSコンソールからアップロードします。
+
+AWSのCLI(コマンド・ライン・インターフェース)ツールを使って、「**[Amazon Rekognition（以下、Rekognition）](https://aws.amazon.com/jp/rekognition/)**」の「コレクション」を作成し、認識対象となる顔を登録します。
+
+---
+
+### 目的
+
+- AWSコンソールからクラウドにファイルをアップロードする
+- AWS CLIの使い方を学ぶ
+
+### 概要
+
+- AWSコンソールからS3のバケットを作成し画像をアップロードする
+- AWS CLI用のユーザーを作成する
+- AWS CLIでRekognitionのコレクションを作成し画像を登録する
+
+---
+
+### ＜Amazon S3とは？＞
+
+Amazon Simple Storage Service（Amazon S3）は、AWSによって提供されるクラウド型のオブジェクトストレージサービスです。容量無制限・高耐久性と低コストが大きな特徴です。
+
+- 容量無制限
+- [従量課金制](https://aws.amazon.com/jp/s3/pricing)
+    - ユースケースに応じたさまざまなストレージクラスが存在している（IA,1ゾーンIA,Glacier etc）
+    - 適したストレージクラスを使用することでコスト最適化が可能
+- 高耐久性（99.999999999%）
+    - 自動的に３箇所以上のAZ(アベイラビリティゾーン)に冗長に保存される
+- バケット単位、オブジェクト単位の詳細なアクセス権限の設定が可能
+- 保存期間を設定したライフサイクル設定が可能
+- ファイルの世代管理が可能
+
+より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/s3/)をご確認ください。
+
+### ＜AWS CLIとは？＞
+
+AWSコマンドラインインターフェースの略で、AWSサービスをコマンドラインから操作し管理するためのオープンソースツールです。
+コマンドラインから複数のAWSサービスを制御し、スクリプトを使用してこれらの作業を自動化することができます。
+
+- Windows/Mac/Linuxなどの様々なOSで使用可能
+  - Windowsの場合、PowerShell または Windowsコマンドプロンプトでコマンドを実行
+  - Mac/Linux/Unixの場合、bash/zsh/tcshなどの一般的なシェルプログラムでコマンドを実行
+- 使い方やリファレンスは以下を参照
+  - [AWSコマンドラインインターフェースのユーザーガイド](https://docs.aws.amazon.com/ja_jp/cli/latest/userguide/cli-chap-welcome.html)
+  - [AWS CLIコマンドリファレンス](https://docs.aws.amazon.com/cli/latest/reference/)
+
+より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/cli/)をご確認ください。
+
+### ＜Amazon Rekognitionとは？＞
+
+Amazon Rekognitionは、ディープラーニング技術を利用したフルマネージド型の画像認識サービスです。
+画像や動画を対象に、画像のシーンやアクティビティの検出、顔認識、有名人の検出、顔の分析、テキスト抽出といった機能を提供します。
+Rekognition APIに対象の画像を登録・送信するだけで、これらの機能を自身のアプリケーションに簡単に組み込み利用することが可能です。
+
+- Amazon Rekognition Imageでは以下の機能が利用可能
+    - 物体とシーンの検出
+    - 顔認識
+    - 顔分析
+    - 顔の比較
+    - 危険画像の検出
+    - 有名人の認識
+    - 画像内のテキスト検出
+- Amazon Rekognition Videoでは以下の機能が利用可能
+    - ストリーミングビデオのリアルタイム解析
+    - 人物の識別と追跡
+    - 顔認識
+    - 顔分析
+    - 物体、シーン、動作の検出
+    - 不適切な動画の検出
+    - 有名人の認識
+
+より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/rekognition/)をご確認ください。
+
+### ＜Amazon Rekognitionでの顔認識＞
+
+顔認識を行うためにAmazon Rekognitionの機能のひとつである `SearchFacesByImage` という機能を使います。
+Amazon Rekognitionでは、検出した顔に関する情報を `コレクション` というサーバー側のコンテナに保存できます
+コレクションにはイメージが格納されているのではなく、顔ごとに顔の特徴を特徴ベクトルに抽出し、その特徴ベクトルが保存されています。
+コレクションに保存された顔の情報を使用して、イメージ、保存済みビデオ、およびストリーミングビデオ内の既知の顔を検索することができます。
+また、コレクション内の画像にタグをつけて「コレクションの中に登録されている顔であれば、登録した顔画像のタグを返す」といった使い方ができます。
+
+詳細は、公式ドキュメント「[コレクション内での顔の検索](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/collections.html)」をご確認ください。
+
+---
+
+## 1-1. コレクションに登録する画像をアップロードするためのS3バケットを作成
+
+この項目ではAWSのS3というサービスを用いて、コレクションに登録するための画像の保存先となる「バケット」を作成していきます。
+以下の手順でS3のバケットを用意します。
+
+---
+
+### ＜S3バケットとは？＞
+
+Amazon S3に格納されるすべてのオブジェクト(ファイル)は、バケット（バケツ）と呼ばれる入れ物の中に存在します。
+バケットの用途には、Amazon S3の最上位の名前空間を形成する、ストレージとデータ転送の課金アカウントを特定する、アクセスコントロールに使用する、使用状況レポートの集計単位として使用するなど、さまざまなものがあります。
+もっとも重要な役割は「オブジェクトにたいして名前空間を提供する」ことです。
+名前空間はすべてのAWSアカウントによって共有されますので、グローバルに一意である必要があります。
+https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/UsingBucket.html
+
+---
+
+### 1-1-1. AWSのコンソール画面で「S3」を検索・選択し[バケットを作成する]をクリックする
+
+![1-1-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-1.png)
+
+![1-1-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-1_2枚目_.png)
+
+### 1-1-2. バケット名を入力し[次へ]をクリックする
+
+- バケット名：任意の名称（例：yamada-rekognition-collection-source）
+- リージョン：アジアパシフィック（東京）
+- 既存のバケットから設定をコピー：ブランク
+
+![1-1-2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-2.png)
+
+**【注意】 バケット名の一意性**
+
+Amazon S3のバケット名はグローバルに一意であり、名前空間はすべてのAWSアカウントによって共有されています。
+そのためバケット名は世界で一意のものを指定する必要があります。
+重複するバケット名がすでに他の誰かに作成されている場合、その名前は利用できません。
+S3バケットの命名のガイドラインについては[バケットの制約と制限](https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/BucketRestrictions.html)のサイトを参照してください。
+
+**【注意】 リージョン指定**
+
+リージョンが「アジアパシフィック(東京)」になっていることを確認してください。
+今回はすべてのAWSサービスを東京リージョンで構築します。
+リージョンが異なると、サービス間連携の遅延や他のAWSサービスと連携する上での困難等が生じることがございます。
+
+### 1-1-3. 「オプションの設定」は何も設定せずに[次へ]をクリックする
+
+今回はオプションの設定は使用しませんので、何もチェックをつけずに「次へ」をクリックしてください。
+
+![1-1-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-3.png)
+
+---
+
+### ＜バージョニングとは？＞
+
+バージョニングとは、同じバケット内でオブジェクトの複数のバージョンを保持する手段です。
+バージョニングの設定をONにすることで、Amazon S3バケットに格納されたあらゆるオブジェクトのあらゆるバージョンを格納、取得、復元することができます。
+オブジェクトを誤って削除した場合でも復元することが可能です。
+https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/Versioning.html
+
+### ＜サーバーアクセスのログ記録とは？＞
+
+サーバーアクセスのログ記録をONにすると、バケットに対するリクエストの詳細が記録されます。
+アクセスログのレコードごとに1つのアクセスリクエストの詳細として、リクエスタ、バケット名、リクエスト時刻、リクエストアクション、レスポンスのステータス、エラーコード (存在する場合) などの情報が取り込まれます。
+https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/ServerLogs.html
+
+---
+
+### 1-1-4. 「アクセス許可の設定」を確認し[次へ]をクリックする
+
+アクセス許可の設定では、S3バケットに対してアクセスできる権限を指定します。
+「**パブリックアクセスをすべてブロック**」にチェックが入っているかを確認してください。
+
+**【注意】 S3バケットのパブリックアクセスについて**
+「パブリックアクセスが有効」な状態のS3バケットは、世界中の人々に公開されている状態となります。
+S3バケットのパブリックアクセスが原因となった顧客情報の漏洩などの事件も発生しておりますので、アクセス権限の設定はお気をつけください。
+![1-1-４](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-3_2枚目_.png)
+
+
+### 1-1-５. 確認画面に表示されている内容を確認し[バケットを作成]をクリックする
+
+バケットの作成リージョンが「アジアパシフィック（東京）」になっていることや、パブリックアクセスをブロックするようになっていることを確かめてからバケットを作成します。
+
+![1-1-５](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-4.png)
+
+
+## 1-2. S3バケットに画像をアップロードする
+
+作成したバケットに、コレクションに登録したい人物の顔が写った画像をアップロードします。
+
+- アップロードの作業に移る前に、下記注意事項をご確認ください。
+  - **Rekognitionで利用できる画像の制限**
+  Rekognitionに利用できる画像には制限がありますので、画像をアップロードする前にご確認ください。
+  https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/limits.html
+  - **画像に写っている顔の数**
+  後述のRekognitionのコレクションへの顔の登録の性質から、画像に写っている顔は、登録したい人一人分の顔が写ったものを利用ください。
+
+### 1-2-1. 対象のバケットを検索し選択する
+
+- バケット検索欄にステップ1-1-5で作成したバケット名の一部を入力する（例：yamada）
+
+
+
+- 対象のバケット名をクリックする
+
+
+### 1-2-2. 対象画像をアップロードする
+
+- アップロード画面に顔認識のベースとなる画像をドロップ
+
+
+- オプションは何も指定せずに「アップロード」をクリック
+
+
+- アップロードに成功した場合、画像ファイルがバケット内にリストで表示される
+
+
+
+### 1-3. Rekognitionのコレクション作成とコレクションへの顔追加ができる権限を作成(ポリシー編)
+
+現時点(2019/12/01時点)では、AWSのコンソール画面からRekognitionのコレクションは作成できません。
+そのため、ローカルPCからAWS CLIを使用してRekognitionのコレクションを作成する必要がございます。
+
+*※ローカルPCのAWS CLIにAdmin権限を付与済みであれば、当対応は不要です。*
+
+ローカルPCのAWS CLIからRekognitionの操作を行うために必要なアクションのみを許可するポリシーをアタッチした「**[IAMユーザー](https://aws.amazon.com/jp/iam/)**」を作成します。
+
+加えて、アクセスできるバケットを指定することでアクセス権限を最小限にし、セキュリティレベルを高めます。
+
+---
+
+### ＜IAMとは？＞
+AWS Identity and Access Management (IAM) は、AWSのサービスやリソースへのアクセスを安全に管理するためのサービスです。
+IAMを使用することで、AWSのユーザーとグループを作成および管理し、アクセス権を使用して AWSリソースへのアクセスを許可および拒否できます。
+権限管理は非常に重要な部分ですので[IAMのベストプラクティス](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/best-practices.html)をご確認いただく事を推奨します。
+
+より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/iam/)をご確認ください。
+
+---
+
+### 1-3-1. AWSのコンソール画面で「IAM」を検索・選択し[ポリシー] -> [ポリシーの作成]をクリックする
+IAMのポリシーでアクセス権限を設定し、これをユーザーにアタッチすることでユーザーにアクセス権限が付与されます。
+
+- AWSサービス
+![1-3-1-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1_.png)
+![1-3-1-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1-1.png)
+
+### 1-3-2. ビジュアルエディタでサービス・アクション・リソースを設定する
+
+ビジュアルエディタもしくはJSONでの記述により、アクセス権限をカスタムで作成できます。
+ここではビジュアルエディタでの設定方法に沿って説明します。
+
+#### 1-3-2-1. サービスを選択する
+
+まずは、どのAWSサービスに対して権限を設定するかを選択します。
+
+サービス欄の「`サービスの選択`」をクリックします。
+![1-3-2-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-1_1.png)
+
+サービスの検索ボックスに「`S3`」と入力して、下に表示されたサービスの候補から「`S3`」をクリックします。
+![1-3-2-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-1_2.png)
+
+#### 1-3-2-2. アクションを選択する
+
+選択したS3サービスのどのアクションに権限を設定するかを選択します。
+
+アクセスレベル欄の「`書き込み`」の「▶︎」をクリックし、「`PutObject`」にチェックを付けます。
+![1-3-2-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-2_1.png)
+
+#### 1-3-2-3. リソースを選択する
+
+選択したS3サービスのPutObjectアクションに対してリソースの制限を設けます。
+
+リソース欄の「▶︎」をクリックし、「`指定`」にチェックを付け、object欄の「`ARNの追加`」をクリックします。
+![1-3-2-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-3_1.png)
+
+ARNの追加ポップアップ画面に以下の情報を入力し「`追加`」をクリックします。
+- Bucket name
+    - Step1-1で作成したS3バケット名
+    （例：yamada-rekognition-collection-source）
+- Object name
+    - 「`すべて`」にチェック付与
+
+![1-3-2-3_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-3_2.png)
+
+**【参考】 ARNとは**
+[ARN](https://docs.aws.amazon.com/ja_jp/general/latest/gr/aws-arns-and-namespaces.html)とは *Amazon Resource Name* の略で、AWSのサービスやサービス内で作成したリソースを一意に識別するための特殊な表記のことです。
+ARNの表記方法はAWSサービスごとに異なります。
+S3の「オブジェクト」とは、S3バケット内のすべてのアイテムを指します。
+また
+
+
+#### 1-3-2-4. ポリシー内容を確定する
+
+ポリシーの内容が以下の画面通りとなっていることを確認し、「`ポリシーの確認`」をクリックします。
+![1-3-2-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-4_1.png)
+
+
+- サービス： `S3`
+- アクション：[`書き込み`]の `GetObject`
+- リソース：[`指定`]を選択し、object欄の[`ARNの追加`]をクリック。ステップ2-1-1で作成したバケット名
+          （例： `yamada-rekognition-collection-source`）を入力し、Objectは[すべて]にチェック
+
+
+
+- 「ビジュアルエディタ」タブを選択する
+    - サービスで `S3` を検索し選択する
+    - アクションに「`書き込み`」の「`PutObject`」を選択する
+    - リソースの「`指定`」を選択し`ARNの追加`リンクをクリックする
+- ポップアップ画面で以下の情報を入力し`追加`をクリックする
+    - Bucket name：にステップ1-1で作成したバケット名（例：yamada-target-images-bucket）を入力する
+    - Object name：「すべて」にチェックする
+- 「ポリシーの確認」をクリックする
+![1-3-2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1-2_.png)
+
+### 1-3-3. 設定が終わったら[ポリシーの確認]後、ポリシーに名前をつけて[ポリシーの作成]をクリックする
+ポリシーの確認画面で[ポリシーの作成]のクリックを忘れがちですのでご注意ください。
+
+- 名前：任意の名称（例：yamada_upload_target_image_policy）
+- 説明：任意
+
+#### 【参考】 JSON形式で記述で記述する場合は以下のようになります
+![1-3-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1-3.png)
+
+## 1-4. 作成したS3バケットにアクセスできる権限を作成(IAMユーザ編)
+
+ステップ1-3-1で作成したポリシーを、ここで作成するIAMユーザーに対してアタッチします。
+
+### 1-4-1. 左の欄からユーザーを選び[ユーザーを追加]をクリックする
+
+![1-3-2-1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2.png)
+
+### 1-4-2. ユーザー名を入力し、「アクセスの種類」で[プログラムによるアクセス]を選択し[次のステップ:アクセス権限]をクリックする
+
+このステップで作成するユーザはデバイスからAWS SDK経由のプログラムからアクセスするためのユーザとなりますので、AWSコンソールへのログインは不要としプログラムによるアクセスのみ有効としましょう。
+
+- ユーザー名：任意の名称（例：yamada_device_user）
+- プログラムによるアクセス：チェック
+- AWSマネジメントコンソールへのアクセス：チェックなし
+![1-4-2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-2_.png)
+
+### 1-4-3. [既存のポリシーを直接アタッチ]を選び、ステップ1-3-3で作成したポリシーを選択し[次のステップ:タグ]をクリックする
+
+- アクセス許可の設定欄の「既存のポリシーを直接アタッチ」をクリックする
+- ステップ1-3-3で作成したポリシー（例：yamada_upload_target_image_policy）を検索しチェックを付与する
+- 「次のステップ：タグ」をクリックする
+![1-4-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-4_.png)
+
+### 1-4-4. [次のステップ:確認]をクリックする
+
+今回はタグは使用しない為、タグの追加は行わずに次のステップに進みましょう。
+
+![1-4-4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-4.png)
+
+#### ＜タグとは？＞
+タグとは、AWSリソースを整理するためのメタデータとして使用されるキーと値のペア値のことです。
+タグを使用して[リソースグループ](https://docs.aws.amazon.com/ja_jp/ARG/latest/userguide/welcome.html)を作成すると、複数のリージョンやサービスをまたいでプロジェクト別にAWSリソースを視覚化できます。
+タグを使用してAWSの請求を整理して視覚化する方法については「[コスト配分タグの使用](https://docs.aws.amazon.com/ja_jp/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)」を参照してください。
+
+
+### 1-4-5. 最後の確認画面で表示されている内容に問題がなければ[ユーザーの作成]をクリックする
+
+![1-4-5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-5.png)
+
+### 1-4-6. [.csvのダウンロード]をクリックする
+
+AWSにコマンドラインからアクセスするための認証（クレデンシャル）情報として、アクセスキーとシークレットアクセスキーが生成されます。
+次のステップで利用しますのでダウンロードしておきましょう。
+
+![1-4-6](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-6.png)
+
+
+
+
+
+ステップ1-3.を参考に、IAMユーザーを作成し、アクセスキーをダウンロードしてください。
+
+ポリシーの作成で必要な権限は以下の通りです。
+
+- **ステップ2-1-1で作成したS3バケットにアクセスし、その中のオブジェクトをGetする** 
+
+	- サービス： `S3`
+	- アクション：[読み込み]の `GetObject`
+	- リソース：[指定]を選択し、object欄の[ARNを追加]をクリック。ステップ2-1-1で作成したバケット名  
+	　　　　　　（例： `yamada-rekognition-collection-source`）を入力し、Objectは[すべて]にチェック
+
+- **Rekognitionでコレクションを扱う**
+
+	- サービス： `Rekognition`
+	- アクション：
+		- [読み込み] `ListCollections`、 `ListFaces`、 `SearchFacesByImage
+`
+		- [書き込み] `CreateCollection`、 `IndexFaces`、 `DeleteCollection`、 `DeleteFaces`
+	- リソース：すべてのリソース
+
+※ 「Rekognitionでコレクションを扱う」権限では、コレクションの作成と顔の登録の他に、コレクションや登録した顔を確認・利用したり、ハンズオン後に削除するために必要な権限も付与しています。
+
+#### 複数サービスを対象とするポリシーを作成する方法
+ビジュアルエディタのポリシー作成画面にて、右下の[さらにアクセス許可を追加]をクリックすることで、一度に複数のサービスを対象とするポリシーを登録することができます。
+
+### 2-1-4. クレデンシャル情報をAWS CLIに登録する
+
+作成したクレデンシャル情報を、ローカルPCのAWS CLIに登録します。
+登録の方法は、1-4-1を参考にしてください。
+
+### 2-1-5. コレクションを作成する
+
+まずは、認証の対象となる顔データの登録先となるコレクションを作成します。
+コレクションには、 `--collection-id`パラメーターで名前をつける必要があります。
+使用目的が分かるようなコレクション名をつけましょう。
+（例：yamada-authentication-collection）
+
+- 以下のコマンドを実行しコレクションを作成してください
+  コマンドの詳細は、公式ドキュメント「[コレクションの作成](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/create-collection-procedure.html)」をご確認ください。
+
+```shell:実行コマンド例
+# collection-id の引数は任意のコレクション名にしてください
+$ aws rekognition create-collection --collection-id "yamada-authentication-collection"
+```
+
+- 出力結果から、コレクションが作成できたかどうかが確認できます
+
+```shell:実行結果
+$ aws rekognition create-collection --collection-id "yamada-authentication-collection"
+{
+    "StatusCode": 200,
+    "CollectionArn": "aws:rekognition:ap-northeast-1:XXXXXXXXXXXX:collection/yamada-authentication-collection",
+    "FaceModelVersion": "4.0"
+}
+```
+
+- `list-collections`コマンドを実行することで、対象のAWSアカウントで管理されているコレクションの一覧を確認することができます
+
+```shell:実行コマンド
+$ aws rekognition list-collections
+{
+    "CollectionIds": [
+        "authentication-collection",
+        "collection-handson",
+        "yamada-authentication-collection"
+    ],
+    "FaceModelVersions": [
+        "4.0",
+        "4.0",
+        "4.0"
+    ]
+}
+```
+
+### 2-1-6. コレクションに顔を登録する
+
+前のステップで作成したコレクションに対して、以下のコマンドで対象の顔画像を登録します。
+
+```shell:実行コマンド例
+$ aws rekognition index-faces \
+      --image '{"S3Object":{"Bucket":"yamada-rekognition-collection-source","Name":"Taro_Yamada.jpg"}}' \
+      --collection-id "yamada-authentication-collection" \
+      --max-faces 1 \
+      --quality-filter "AUTO" \
+      --detection-attributes "ALL" \
+      --external-image-id "Taro_Yamada" 
+```
+
+- **パラメーターの説明**
+  コマンドの詳細は、[こちら](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/add-faces-to-collection-procedure.html)の公式ドキュメントをご参考ください。
+
+  - `--image`
+      - パラメーター内の `"Bucket"`属性の値には、ステップ2-1-1で作成したバケット名、 
+      - `"Name"`属性の値には、ステップ2-1-2でアップロードした画像ファイル名を、それぞれ入力します
+
+  - `--collection-id`
+      - 前のステップで作成したコレクション名を入力します
+
+  - `--max-faces 1`
+      - これは、登録に利用した画像に複数人写っていた場合、「顔である」確率が最も高いものから最大何人分の顔を一度に登録するかを指定しています。
+      - Rekognitionのコレクションへの顔の登録では、画像に写っている顔を最大100人まで一度に登録できますが、その際につけられるタグは1つだけです。
+      - 今回は、顔とタグを一対一で対応させたいので、 `max-faces`を `1`にしてください。。
+
+  - `--external-image-id`
+      - オプション指定例: `external-image-id "Taro_Yamada"`
+      - これは、登録に利用した画像データに対して、タグ付けを行う機能です。
+      - 上記の `--max-faces`を `1`と指定し、画像に写っている人物名を `external-image-id`で設定することで、コレクションを利用した顔認証の際に、判定結果の人物名を取得することが可能となります。
+
+
+- コレクションに顔の登録が成功した場合は、対象の顔の特徴情報のJSONが表示されます
+
+```shell:登録成功時
+{
+    "FaceRecords": [
+        {
+            "Face": {
+                "FaceId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
+                "BoundingBox": {
+                    "Width": 0.40926530957221985,
+                    "Height": 0.446433961391449,
+                    "Left": 0.2812435030937195,
+                    "Top": 0.12307235598564148
+                },
+                "ImageId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
+                "ExternalImageId": "Taro_Yamada",
+                "Confidence": 100.0
+            },
+          ・・・
+```
+
+- `list-faces` コマンドを実行することで、対象のコレクションに含まれる顔の一覧を確認することができます
+  実行時には対象のコレクションIDを指定する必要があります
+
+```shell:実行コマンド
+$aws rekognition list-faces --collection-id yamada-authentication-collection
+{
+    "Faces": [
+        {
+            "FaceId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
+            "BoundingBox": {
+                "Width": 0.40926501154899597,
+                "Height": 0.44643399119377136,
+                "Left": 0.2812440097332001,
+                "Top": 0.12307199835777283
+            },
+            "ImageId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
+            "ExternalImageId": "Taro_Yamada",
+            "Confidence": 100.0
+        }
+    ],
+    "FaceModelVersion": "4.0"
+}
+```
+
+### 2-1-7. コレクションをテストする
+
+ステップ2-1-2で作成したバケットとアップロードした画像を利用して、コレクションに登録した顔とマッチするかテストします。コレクションに登録した顔のデータと、そのデータの元となる画像を比較するため、マッチ率は100%に限りなく近い数値となります。
+
+- 以下のコマンドを実行し、指定した画像の中にコレクション内の顔と一致する顔があるか確認します
+
+```shell:実行コマンド例
+$ aws rekognition search-faces-by-image \
+--image '{"S3Object":{"Bucket":"yamada-rekognition-collection-source","Name":"Taro_Yamada.jpg"}}' \
+--collection-id "yamada-authentication-collection"
+```
+
+- **パラメーターの説明**
+  コマンドの詳細は、[こちら](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/search-face-with-image-procedure.html)の公式ドキュメントをご参考ください。
+
+  - `--image`
+      - パラメーター内の `"Bucket"`属性の値には、ステップ2-1-1で作成したバケット名、 
+      - `"Name"`属性の値には、ステップ2-1-2でアップロードした画像ファイル名を、それぞれ入力します
+
+  - `--collection-id`
+      - 前のステップで作成したコレクション名を入力します
+ 
+- 出力結果から、指定したS3バケット内の画像の中に顔があるかどうか、顔がコレクション内の顔とどの程度マッチするかがわかります
+    -  `FaceMatches`内の要素のうち `Similarity`が、マッチ度を表し、
+    -  マッチした顔は `Face`内の `ExternalImageId`で確認できます
+
+```shell:実行結果
+$ aws rekognition search-faces-by-image --image '{"S3Object":{"Bucket":"yamada-rekognition-collection-source","Name":"Taro_Yamada.jpg"}}' --collection-id yamada-authentication-collection
+
+{
+    "SearchedFaceBoundingBox": {
+        "Width": 0.40926530957221985,
+        "Height": 0.446433961391449,
+        "Left": 0.2812435030937195,
+        "Top": 0.12307235598564148
+    },
+    "SearchedFaceConfidence": 100.0,
+    "FaceMatches": [
+        {
+            "Similarity": 99.99918365478516,
+            "Face": {
+                "FaceId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX"",
+                "BoundingBox": {
+                    "Width": 0.40926501154899597,
+                    "Height": 0.44643399119377136,
+                    "Left": 0.2812440097332001,
+                    "Top": 0.12307199835777283
+                },
+                "ImageId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
+                "ExternalImageId": "Taro_Yamada",
+                "Confidence": 100.0
+            }
+        }
+    ],
+    "FaceModelVersion": "4.0"
+}
+```
+
+
+
+
+## 1-3. 作成したS3バケットにアクセスできる権限を作成(ポリシー編)
+
+ステップ1-1で作成したS3バケットに画像をアップロードするアクションのみを許可するポリシーをアタッチした「**[IAMユーザー](https://aws.amazon.com/jp/iam/)**」を作成します。
+加えて、アクセスできるバケットを指定することでアクセス権限を最小限にし、セキュリティレベルを高めます。
+
+---
+
+### ＜IAMとは？＞
+AWS Identity and Access Management (IAM) は、AWSのサービスやリソースへのアクセスを安全に管理するためのサービスです。
+IAMを使用することで、AWSのユーザーとグループを作成および管理し、アクセス権を使用して AWSリソースへのアクセスを許可および拒否できます。
+権限管理は非常に重要な部分ですので[IAMのベストプラクティス](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/best-practices.html)をご確認いただく事を推奨します。
+
+より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/iam/)をご確認ください。
+
+---
+
+### 1-3-1. AWSのコンソール画面で「IAM」を検索・選択し[ポリシー] -> [ポリシーの作成]をクリックする
+IAMのポリシーでアクセス権限を設定し、これをユーザーにアタッチすることでユーザーにアクセス権限が付与されます。
+
+- AWSサービス
+![1-3-1-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1_.png)
+![1-3-1-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1-1.png)
+
+### 1-3-2. ビジュアルエディタでサービス・アクション・リソースを設定する
+
+ビジュアルエディタもしくはJSONでの記述により、アクセス権限をカスタムで作成できます。
+ここではビジュアルエディタでの設定方法に沿って説明します。
+
+- サービス： `S3`
+- アクション：[書き込み]の `PutObject`
+- リソース：作成したバケット名（例： `yamada-target-images-bucket`）、Objectは[すべて]
+
+**【注意】 リソースの指定について**
+S3の「オブジェクト」とは、S3バケット内のアイテムのすべてを指します。
+また[ARN](https://docs.aws.amazon.com/ja_jp/general/latest/gr/aws-arns-and-namespaces.html)とは*Amazon Resource Name*の略で、AWSのサービスやサービス内で作成したリソースを一意に識別するための特殊な表記のことです。
+ARNの表記はAWSサービスによって異なります。
+
+- 「ビジュアルエディタ」タブを選択する
+    - サービスでS3を検索し選択する
+    - アクションに「書き込み」の「PutObject」を選択する
+    - リソースの「指定」を選択し[ARNの追加]をクリックする
+- ポップアップ画面で以下を入力し[追加]をクリックする
+    - Bucket name：にステップ1-1で作成したバケット名（例：yamada-target-images-bucket）を入力する
+    - Object name：「すべて」にチェックする
+- 「ポリシーの確認」をクリックする
+![1-3-2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1-2_.png)
+
+### 1-3-3. 設定が終わったら[ポリシーの確認]後、ポリシーに名前をつけて[ポリシーの作成]をクリックする
+ポリシーの確認画面で[ポリシーの作成]のクリックを忘れがちですのでご注意ください。
+
+- 名前：任意の名称（例：yamada_upload_target_image_policy）
+- 説明：任意
+
+#### 【参考】 JSON形式で記述で記述する場合は以下のようになります
+![1-3-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-1-3.png)
+
+## 1-4. 作成したS3バケットにアクセスできる権限を作成(IAMユーザ編)
+
+ステップ1-3-1で作成したポリシーを、ここで作成するIAMユーザーに対してアタッチします。
+
+### 1-4-1. 左の欄からユーザーを選び[ユーザーを追加]をクリックする
+
+![1-3-2-1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2.png)
+
+### 1-4-2. ユーザー名を入力し、「アクセスの種類」で[プログラムによるアクセス]を選択し[次のステップ:アクセス権限]をクリックする
+
+このステップで作成するユーザはデバイスからAWS SDK経由のプログラムからアクセスするためのユーザとなりますので、AWSコンソールへのログインは不要としプログラムによるアクセスのみ有効としましょう。
+
+- ユーザー名：任意の名称（例：yamada_device_user）
+- プログラムによるアクセス：チェック
+- AWSマネジメントコンソールへのアクセス：チェックなし
+![1-4-2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-2_.png)
+
+### 1-4-3. [既存のポリシーを直接アタッチ]を選び、ステップ1-3-3で作成したポリシーを選択し[次のステップ:タグ]をクリックする
+
+- アクセス許可の設定欄の「既存のポリシーを直接アタッチ」をクリックする
+- ステップ1-3-3で作成したポリシー（例：yamada_upload_target_image_policy）を検索しチェックを付与する
+- 「次のステップ：タグ」をクリックする
+![1-4-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-4_.png)
+
+### 1-4-4. [次のステップ:確認]をクリックする
+
+今回はタグは使用しない為、タグの追加は行わずに次のステップに進みましょう。
+
+![1-4-4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-4.png)
+
+#### ＜タグとは？＞
+タグとは、AWSリソースを整理するためのメタデータとして使用されるキーと値のペア値のことです。
+タグを使用して[リソースグループ](https://docs.aws.amazon.com/ja_jp/ARG/latest/userguide/welcome.html)を作成すると、複数のリージョンやサービスをまたいでプロジェクト別にAWSリソースを視覚化できます。
+タグを使用してAWSの請求を整理して視覚化する方法については「[コスト配分タグの使用](https://docs.aws.amazon.com/ja_jp/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)」を参照してください。
+
+
+### 1-4-5. 最後の確認画面で表示されている内容に問題がなければ[ユーザーの作成]をクリックする
+
+![1-4-5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-5.png)
+
+### 1-4-6. [.csvのダウンロード]をクリックする
+
+AWSにコマンドラインからアクセスするための認証（クレデンシャル）情報として、アクセスキーとシークレットアクセスキーが生成されます。
+次のステップで利用しますのでダウンロードしておきましょう。
+
+![1-4-6](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-3-2-6.png)
+
+
+## 1-5. S3に画像をアップロードするプログラムを準備
+
+### 1-5-1. AWS CLIに認証情報を登録する
+
+AWS CLIは `aws`コマンドで動作します。
+デバイスのコマンドラインから、認証情報を設定します。
+
+```shell:認証情報の設定
+$ aws configure
+```
+
+その後、 アクセスキー・シークレットアクセスキー、デフォルトリージョン・デフォルト出力フォーマットの順に問われますので、順に情報を入力ください。
+
+- 【アクセスキー】 １−３−２−６でダウンロードしたCSVファイルのAccessKeyを設定してください
+- 【シークレットキー】 １−３−２−６でダウンロードしたCSVファイルのSecretKeyを設定してください
+- 【デフォルトリージョン】 東京リージョンを意味する「 `ap-northeast-1`」を設定してください
+- 【デフォルト出力フォーマット】 `json`を設定してください
+
+**【注意】 デフォルトの登録について**
+この時、デフォルトリージョンや出力フォーマットを大文字で入力するなどのタイプミスをすると、この後のサービスへのアクセスがうまくできなかったり、コマンドラインへの出力がうまくされなくなります。
+上記の通りに入力するようご注意ください。
+
+### 1-5-2. S3に画像をアップロードするプログラムを作成する
+
+デバイス内の画像データを1-1で作成したバケットにアップロードする処理を行うPythonプログラムを作成します。
+
+Pythonプログラムのファイルは、 `python`コマンドの引数として指定して実行します。
+またその際、続けて引数をプログラムに渡すことができます。
+
+今回は、コマンド引数として以下を指定することで動作するプログラムを作成しましょう。
+
+- 第1引数：pythonファイル（例: `upload_target_image.py`）
+- 第2引数：画像ファイルのパス（例: `picture/image01.jpg`）
+- 第3引数：S3のバケット名（例: `yamada-target-images-bucket`）
+
+```shell:Pythonバージョン3を指定して実行
+$ python3 upload_target_image.py picture/image01.jpg yamada-target-images-bucket
+```
+
+サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-zybo-and-aws/blob/master/step1/upload_target_image.py)の `upload_target_image.py`となります。
+
+#### 作成スクリプトの解説
+
+- import一覧
+
+```python:upload_target_image.py
+    import sys            # pythonコマンド実行時に指定された引数を取得するのに利用します
+    import boto3          # AWSをPythonから操作するためのSDKのライブラリです
+```
+
+- ファイル名変換処理
+  - S3バケットに同じ名前のオブジェクトをアップロードした場合、オブジェクトが上書きされる
+  - 画像ファイルが上書きされないように、ファイル名と拡張子の間に日時(YYYYMMDDhhmmss)を付与している
+  - 例）指定ファイル名「`image01.jpg`」 → S3格納ファイル名「`image01_20190731070707.jpg`」
+
+```python:upload_target_image.py
+  # datetimeライブラリのインポート
+  from datetime import datetime as dt
+  # 定数
+  DATA_NOW = dt.now()
+  TIMESTAMP = str(DATA_NOW.strftime('_%Y%m%d%H%M%S')) #日本時間
+  # ディレクトリ名とファイル名を分ける
+  directory, filename = os.path.split(filepath)
+  # ファイル名の拡張子前後で分ける
+  current_file_name, extension = os.path.splitext(filename)
+  # ファイル名の後にタイムスタンプを追記しその後に拡張子が来るようにする
+  relation_s3.filename = current_file_name + TIMESTAMP + extension
+```
+
+- boto3 resource `s3`のメソッド `upload_file`を使用する
+  - 以下のboto3マニュアルを参考に、実装してください：
+  - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.upload_file
+
+```python:upload_target_image.py
+  # boto3のインポート
+  import boto3
+  # リソースとしてS3を指定
+  relation_s3.s3 = boto3.resource('s3')
+  # S3のバケット名指定(args[2]: コマンドライン引数で第二引数として渡した名前)
+  relation_s3.bucket = relation_s3.s3.Bucket(args[2])
+  # S3にあげる(第一引数: あげるファイルパス(コマンドライン引数), 第二引数: S3に作られるファイル名)
+  relation_s3.bucket.upload_file(filepath, relation_s3.bucketname)
+```
+
+- boto3に対するエラー処理
+  - boto3実行時のエラーをハンドリングするために「botocore.exceptions」をインポートしている
+  - try-catchでファイルアップロードの成否を判断している
+
+```python:upload_target_image.py
+  # botocoreの例外クラスのインポート
+  import botocore
+  from botocore.exceptions import ClientError
+  # try-catch
+  try:
+      # S3にあげる(第一引数: あげるファイルパス(コマンドライン引数), 第二引数: S3に作られるファイル名)
+      relation_s3.bucket.upload_file(filepath, relation_s3.filename)
+  except FileNotFoundError as e:
+      print('[file not found]' + str(e))
+  except boto3.exceptions.S3UploadFailedError as e:
+      print('[upload failed]' + str(e))    
+  except Exception as e:
+      print('[error]' + str(e))  
+  else:
+      # アップロード時のファイル名を表示
+      print('[succeeded!] upload file name: ' + str(relation_s3.filename))
+```
+
+- 実行結果を `print()`する
+  - プログラム実行結果をコマンドラインで確認できるように、 `print()`メソッドで出力しましょう
+  - S3にアップロードした画像ファイルの名前（例： `image01-20190731070707.jpg`）は、のちのステップで利用しますので、こちらもコマンドラインに出力するようにしましょう
+
+
+### 1-5-3. デバイス内の画像を指定してPythonプログラムを実行する
+
+デバイス内に保存している画像ファイルパスとバケット名を引数に指定し、作成したPythonファイルを実行してみましょう。
+
+```shell:Pythonバージョン3を指定して実行
+$ python3 upload_target_image.py picture/image01.jpg yamada-target-images-bucket
+```
+
+Pythonプログラム実行後の出力を確認します。
+
+```shell:実行結果
+$ python3 upload_target_image.py picture/image01.jpg yamada-target-images-bucket
+[succeeded!] upload file name: image01_20190808181200.jpg
+```
+
+スクリプトの実行が正常に終了した場合はAWSのS3コンソールに移動し、ステップ1-1で作成したバケットに画像がアップロードされているかを確認してみましょう。
+
+## 1-6. 後続ステップで実装するプログラムを呼び出す部分のコメントアウトを確認
+
+今後のステップで実装するプログラムは、今回作成したアップロードプログラムから順番に呼び出すことを想定しています。
+対象の画像をアップロードすることで、顔認証・顔画像分析・クラウドへのアップロードまで一連の操作が完了する流れとなります。
+
+ただし、現時点では後続のプログラムが未作成の状態ですので、呼び出し箇所をコメントアウトしています。
+[サンプルプログラム](https://github.com/IoTkyoto/iot-handson-zybo-and-aws/blob/master/step1/upload_target_image.py)でコメントアウトされている部分の**コメントアウトを外さずに**作業を進めてください。
+
+`#ステップ2で構築するプログラムをcallする`, `#ステップ3で構築するプログラムをcallする` というコメントの直下が対象のコードとなります。
+これらは、今後のステップの然るべきタイミングでコメントアウトを解除する流れとしております。
