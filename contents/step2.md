@@ -23,43 +23,12 @@
 
 ### 概要
 
+<!-- TODO: 全体の項目が決まってからこちらに反映する -->
+
 - 顔認証用のWebAPIを作成し、デバイスからWebAPIを利用する
  - APIのリクエスト・レスポンスを取り扱う
  - WebAPIの認証はAPIキーを使う
 - 顔認識用のコレクションを作成し、対象者が画像に写っているかどうかの画像認識を行う
-
-<!-- 
-- （確認）新アーキテクチャでは、ステップ１において以下のことを行う
-    - 顔認識用のS3バケットを作成する
-    - 上記バケットを利用し、顔コレクションを作成する
-    - 顔認識用のバケットにアクセスし、顔コレクションを作成するIAMユーザークレデンシャルを発行しPCに持たせる
-    - 顔認識の対象となる顔画像の置き場となるバケットは作成しない→ステップ２で作成する
-    - 顔認識対象バケットに画像をアップロードしない→ステップ２でカバーする
-
-- 以上を踏まえ、ステップ２で書く必要のある内容を整理
-    - 顔認識対象バケットを作成する
-        - オプションで画像のライフサイクルを設定する
-    - 顔認識対象バケットにPutObject・ステップ1で作成した顔コレクションにアクセスできるIAMロールを作成する
-        - つまづきポイント：権限がちゃんと選べているか
-    - 顔認識用ロジック（Lambda）を作成する
-        - （受け取ったデータのバリデーションチェック）
-        - 引数の一つであるbase64データをデコード・S3バケットにPutObjectする
-        - 上で保存したパスと・定数である顔コレクション、そしてもう一つの引数である閾値データを使ってRekognitionを実行する
-        - 認識結果をリターンする
-    - Lambdaのテストを行う
-            - テスト用のJSONを作る：どれだけ一致度があれば返すか、の閾値設定
-            - 画像データ（base64）→すごく大きくなるので、このテストに利用する.jsonファイルを作成する
-    - 顔認識用API（API Gateway）を作成する
-    - APIのテストを行う
-    - スマホから実行する
-        - 入力項目
-            - 画像データをアップロードする
-            - 自分が作成したAPIのエンドポイント（部分的）
-            - どれだけ一致度があれば返すか、の閾値設定
-        - （確認）入力不要項目
-            - 顔コレクションの名前はLambdaに定数としてハードコーディングする
-            - 顔認識対象バケットの名前もLambdaに定数としてハードコーディングする
--->
 
 ---
 
@@ -80,8 +49,6 @@ Web APIの代表的な実装方式として、RESTとSOAPが存在しており�
   - XMLで記述された「SOAPメッセージ」と呼ばれるデータをやりとりすることで、メッセージを交換する
 
 様々な公開Web APIが提供されていることや、わかりやすいデータのやり取りから、Web APIを利用してモノリシックなシステムをマイクロサービス化することが現在の潮流となっています。
-
-
 
 
 ### ＜AWS Lambdaとは？＞
@@ -123,269 +90,121 @@ API Gatewayがサポートする認証方式の１つで、所定のキー(文�
 認証機能が必要な場合は、IAMロール、Lambdaオーソライザー、または Amazon Cognitoユーザープールを使用するようにしてください。
 https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-api-usage-plans.html
 
-## 2-1. Rekognitionのコレクションを作成する
 
-顔認識を行うために、参照元となるRekognitionのコレクションを作成しましょう。
+## 2-1. 認識したい顔画像をアップロードするためのS3バケットを作成
 
-まずは、コレクションに登録するための画像を格納するS3バケットを作成します。
-そして、作成したバケットに画像をアップロードした後、その画像を指定してコレクションに顔の登録を行います。
+この項目では、ステップ1-1と同様の手順で、画像認識の対象としてスマホからアップロードする画像の保存先となるバケットを作成していきます。
+一点、前回との違いとして、S3バケット内のデータにライフサイクルを設定します。画像認識用にデバイスから送信された画像は長期間保存する必要はありませんので、オブジェクト作成から１日で削除されるように設定します。
 
-### 2-1-1. コレクション作成に利用するS3バケットを作成する
+### 2-1-1. AWSのコンソール画面で「S3」を検索・選択し[バケットを作成する]をクリックする
 
-コレクションに顔を登録するためには、登録したい顔の画像をS3バケットにアップロードする必要があります。
+![1-1-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-1_1.png)
 
-- ステップ1-1を参考に、バケットを作成してください。
-  - バケット名：任意の名称（例：yamada-rekognition-collection-source）
-  - リージョン：アジアパシフィック（東京）
-  - 既存のバケットから設定をコピー：ブランク
-  - オプションの設定：すべて設定なし
-  - アクセス許可の設定：パブリックアクセスをすべてブロックにチェック
+![1-1-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-1_2.png)
 
-*コレクションは登録に利用した画像データ自体を保持しません。
-コレクションに登録した画像を後から確認出来るように、ライフサイクルの設定は行いません。*
+### 2-1-2. バケット名を入力し[次へ]をクリックする
 
-### 2-1-2. S3バケットに画像をアップロードする
+- バケット名：任意の名称（例：yamada-rekognition-target-images）
+- リージョン：アジアパシフィック（東京）
+- 既存のバケットから設定をコピー：ブランク
 
-作成したバケットに、コレクションに登録したい顔画像をアップロードします。
+![1-1-2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-2_1.png)
 
-- アップロードの作業に移る前に、下記注意事項をご確認ください。
-  - **Rekognitionで利用できる画像の制限**
-  Rekognitionに利用できる画像には制限がありますので、画像をアップロードする前にご確認ください。
-  https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/limits.html
-  - **画像に写っている顔の数**
-  後述のRekognitionのコレクションへの顔の登録の性質から、画像に写っている顔は、登録したい人一人分の顔が写ったものを利用ください。
+**【注意】 バケット名の一意性**
 
-- 以下の手順で対象画像をアップロードしましょう
-  - AWSのS3コンソールを開く
-  - ステップ2-1-1で作成したバケットを開き「アップロード」をクリック
-  - アップロード画面に顔認識のベースとなる画像をドロップ
-  - オプションは何も指定せずに「アップロード」をクリック
-  - アップロードに成功した場合、画像ファイルがバケット内にリストで表示される
+Amazon S3のバケット名はグローバルに一意であり、名前空間はすべてのAWSアカウントによって共有されています。
+そのためバケット名は世界で一意のものを指定する必要があります。
+重複するバケット名がすでに他の誰かに作成されている場合、その名前は利用できません。
+S3バケットの命名のガイドラインについては[バケットの制約と制限](https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/BucketRestrictions.html)のサイトを参照してください。
 
-### 2-1-3. Rekognitionのコレクションの作成とコレクションへの顔の追加ができる権限を作成する
+**【注意】 リージョン指定**
 
-現時点(2019/8/1時点)では、AWSのコンソール画面からRekognitionのコレクションは作成できません。
-そのため、ローカルPCからAWS CLIを使用してRekognitionのコレクションを作成する必要がございます。
-*※ローカルPCのAWS CLIにAdmin権限を付与済みであれば、当対応は不要です。*
+リージョンが「アジアパシフィック(東京)」になっていることを確認してください。
+今回はすべてのAWSサービスを東京リージョンで構築します。
+リージョンが異なると、サービス間連携の遅延や他のAWSサービスと連携する上での困難等が生じることがございます。
 
-ローカルPCのAWS CLIでRekognitionの操作を行うために必要なIAMの権限を作成します。
-ステップ1-3.を参考に、IAMユーザーを作成し、アクセスキーをダウンロードしてください。
+### 2-1-3. 「オプションの設定」は何も設定せずに[次へ]をクリックする
 
-ポリシーの作成で必要な権限は以下の通りです。
+今回はオプションの設定は使用しませんので、何もチェックをつけずに「次へ」をクリックしてください。
 
-- **ステップ2-1-1で作成したS3バケットにアクセスし、その中のオブジェクトをGetする** 
+![1-1-3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-3_1.png)
 
-	- サービス： `S3`
-	- アクション：[読み込み]の `GetObject`
-	- リソース：[指定]を選択し、object欄の[ARNを追加]をクリック。ステップ2-1-1で作成したバケット名  
-	　　　　　　（例： `yamada-rekognition-collection-source`）を入力し、Objectは[すべて]にチェック
+### 2-1-4. 「アクセス許可の設定」を確認し[次へ]をクリックする
 
-- **Rekognitionでコレクションを扱う**
+アクセス許可の設定では、S3バケットに対してアクセスできる権限を指定します。
+「**パブリックアクセスをすべてブロック**」にチェックが入っているかを確認してください。
 
-	- サービス： `Rekognition`
-	- アクション：
-		- [読み込み] `ListCollections`、 `ListFaces`、 `SearchFacesByImage
-`
-		- [書き込み] `CreateCollection`、 `IndexFaces`、 `DeleteCollection`、 `DeleteFaces`
-	- リソース：すべてのリソース
-
-※ 「Rekognitionでコレクションを扱う」権限では、コレクションの作成と顔の登録の他に、コレクションや登録した顔を確認・利用したり、ハンズオン後に削除するために必要な権限も付与しています。
-
-#### 複数サービスを対象とするポリシーを作成する方法
-ビジュアルエディタのポリシー作成画面にて、右下の[さらにアクセス許可を追加]をクリックすることで、一度に複数のサービスを対象とするポリシーを登録することができます。
-
-### 2-1-4. クレデンシャル情報をAWS CLIに登録する
-
-作成したクレデンシャル情報を、ローカルPCのAWS CLIに登録します。
-登録の方法は、1-4-1を参考にしてください。
-
-### 2-1-5. コレクションを作成する
-
-まずは、認証の対象となる顔データの登録先となるコレクションを作成します。
-コレクションには、 `--collection-id`パラメーターで名前をつける必要があります。
-使用目的が分かるようなコレクション名をつけましょう。
-（例：yamada-authentication-collection）
-
-- 以下のコマンドを実行しコレクションを作成してください
-  コマンドの詳細は、公式ドキュメント「[コレクションの作成](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/create-collection-procedure.html)」をご確認ください。
-
-```shell:実行コマンド例
-# collection-id の引数は任意のコレクション名にしてください
-$ aws rekognition create-collection --collection-id "yamada-authentication-collection"
-```
-
-- 出力結果から、コレクションが作成できたかどうかが確認できます
-
-```shell:実行結果
-$ aws rekognition create-collection --collection-id "yamada-authentication-collection"
-{
-    "StatusCode": 200,
-    "CollectionArn": "aws:rekognition:ap-northeast-1:XXXXXXXXXXXX:collection/yamada-authentication-collection",
-    "FaceModelVersion": "4.0"
-}
-```
-
-- `list-collections`コマンドを実行することで、対象のAWSアカウントで管理されているコレクションの一覧を確認することができます
-
-```shell:実行コマンド
-$ aws rekognition list-collections
-{
-    "CollectionIds": [
-        "authentication-collection",
-        "collection-handson",
-        "yamada-authentication-collection"
-    ],
-    "FaceModelVersions": [
-        "4.0",
-        "4.0",
-        "4.0"
-    ]
-}
-```
-
-### 2-1-6. コレクションに顔を登録する
-
-前のステップで作成したコレクションに対して、以下のコマンドで対象の顔画像を登録します。
-
-```shell:実行コマンド例
-$ aws rekognition index-faces \
-      --image '{"S3Object":{"Bucket":"yamada-rekognition-collection-source","Name":"Taro_Yamada.jpg"}}' \
-      --collection-id "yamada-authentication-collection" \
-      --max-faces 1 \
-      --quality-filter "AUTO" \
-      --detection-attributes "ALL" \
-      --external-image-id "Taro_Yamada" 
-```
-
-- **パラメーターの説明**
-  コマンドの詳細は、[こちら](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/add-faces-to-collection-procedure.html)の公式ドキュメントをご参考ください。
-
-  - `--image`
-      - パラメーター内の `"Bucket"`属性の値には、ステップ2-1-1で作成したバケット名、 
-      - `"Name"`属性の値には、ステップ2-1-2でアップロードした画像ファイル名を、それぞれ入力します
-
-  - `--collection-id`
-      - 前のステップで作成したコレクション名を入力します
-
-  - `--max-faces 1`
-      - これは、登録に利用した画像に複数人写っていた場合、「顔である」確率が最も高いものから最大何人分の顔を一度に登録するかを指定しています。
-      - Rekognitionのコレクションへの顔の登録では、画像に写っている顔を最大100人まで一度に登録できますが、その際につけられるタグは1つだけです。
-      - 今回は、顔とタグを一対一で対応させたいので、 `max-faces`を `1`にしてください。。
-
-  - `--external-image-id`
-      - オプション指定例: `external-image-id "Taro_Yamada"`
-      - これは、登録に利用した画像データに対して、タグ付けを行う機能です。
-      - 上記の `--max-faces`を `1`と指定し、画像に写っている人物名を `external-image-id`で設定することで、コレクションを利用した顔認証の際に、判定結果の人物名を取得することが可能となります。
+**【注意】 S3バケットのパブリックアクセスについて**
+「パブリックアクセスが有効」な状態のS3バケットは、世界中の人々に公開されている状態となります。
+S3バケットのパブリックアクセスが原因となった顧客情報の漏洩などの事件も発生しておりますので、アクセス権限の設定はお気をつけください。
+![1-1-４](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-3_2枚目_.png)
 
 
-- コレクションに顔の登録が成功した場合は、対象の顔の特徴情報のJSONが表示されます
+### 2-1-５. 確認画面に表示されている内容を確認し[バケットを作成]をクリックする
 
-```shell:登録成功時
-{
-    "FaceRecords": [
-        {
-            "Face": {
-                "FaceId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
-                "BoundingBox": {
-                    "Width": 0.40926530957221985,
-                    "Height": 0.446433961391449,
-                    "Left": 0.2812435030937195,
-                    "Top": 0.12307235598564148
-                },
-                "ImageId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
-                "ExternalImageId": "Taro_Yamada",
-                "Confidence": 100.0
-            },
-          ・・・
-```
+バケットの作成リージョンが「アジアパシフィック（東京）」になっていることや、パブリックアクセスをブロックするようになっていることを確かめてからバケットを作成します。
 
-- `list-faces` コマンドを実行することで、対象のコレクションに含まれる顔の一覧を確認することができます
-  実行時には対象のコレクションIDを指定する必要があります
+![1-1-５](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-4.png)
 
-```shell:実行コマンド
-$aws rekognition list-faces --collection-id yamada-authentication-collection
-{
-    "Faces": [
-        {
-            "FaceId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
-            "BoundingBox": {
-                "Width": 0.40926501154899597,
-                "Height": 0.44643399119377136,
-                "Left": 0.2812440097332001,
-                "Top": 0.12307199835777283
-            },
-            "ImageId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
-            "ExternalImageId": "Taro_Yamada",
-            "Confidence": 100.0
-        }
-    ],
-    "FaceModelVersion": "4.0"
-}
-```
 
-### 2-1-7. コレクションをテストする
+## 2-2. バケットのライフサイクルを設定
 
-ステップ2-1-2で作成したバケットとアップロードした画像を利用して、コレクションに登録した顔とマッチするかテストします。コレクションに登録した顔のデータと、そのデータの元となる画像を比較するため、マッチ率は100%に限りなく近い数値となります。
+S3にはオブジェクト単位に設定可能なライフサイクル管理の機能があります。
+これはオブジェクトがライフサイクルを通じてコスト効率の高い方法で保存されるように管理する仕組みです。
+オブジェクト作成からの経過日数をトリガーとして、よりコスト効率の高いストレージクラスへの移行やオブジェクトの削除を行うことが出来ます。
+詳細については公式ドキュメント「[オブジェクトのライフサイクル管理](https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/object-lifecycle-mgmt.html)」をご確認ください。
 
-- 以下のコマンドを実行し、指定した画像の中にコレクション内の顔と一致する顔があるか確認します
 
-```shell:実行コマンド例
-$ aws rekognition search-faces-by-image \
---image '{"S3Object":{"Bucket":"yamada-rekognition-collection-source","Name":"Taro_Yamada.jpg"}}' \
---collection-id "yamada-authentication-collection"
-```
 
-- **パラメーターの説明**
-  コマンドの詳細は、[こちら](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/search-face-with-image-procedure.html)の公式ドキュメントをご参考ください。
+### 2-2-1. [管理]の[ライフサイクル]から[ライフサイクルルールの追加]をクリックする
 
-  - `--image`
-      - パラメーター内の `"Bucket"`属性の値には、ステップ2-1-1で作成したバケット名、 
-      - `"Name"`属性の値には、ステップ2-1-2でアップロードした画像ファイル名を、それぞれ入力します
+- バケット検索に先ほど作成したバケットの名前の先頭数文字を入力し絞り込み、対象のバケット名をクリックする
+- 「管理」タブをクリックし、「＋ライフサイクルルールの追加」をクリックする
+![1-2-1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-1_.png)
 
-  - `--collection-id`
-      - 前のステップで作成したコレクション名を入力します
- 
-- 出力結果から、指定したS3バケット内の画像の中に顔があるかどうか、顔がコレクション内の顔とどの程度マッチするかがわかります
-    -  `FaceMatches`内の要素のうち `Similarity`が、マッチ度を表し、
-    -  マッチした顔は `Face`内の `ExternalImageId`で確認できます
+### 2-2-2. ルール名を入力して[次へ]をクリックする
 
-```shell:実行結果
-$ aws rekognition search-faces-by-image --image '{"S3Object":{"Bucket":"yamada-rekognition-collection-source","Name":"Taro_Yamada.jpg"}}' --collection-id yamada-authentication-collection
+- ルール名：任意の名称（例：remove-in-a-day）
+- フィルターを追加してプレフィックス/タグのみを対象にする：ブランク
 
-{
-    "SearchedFaceBoundingBox": {
-        "Width": 0.40926530957221985,
-        "Height": 0.446433961391449,
-        "Left": 0.2812435030937195,
-        "Top": 0.12307235598564148
-    },
-    "SearchedFaceConfidence": 100.0,
-    "FaceMatches": [
-        {
-            "Similarity": 99.99918365478516,
-            "Face": {
-                "FaceId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX"",
-                "BoundingBox": {
-                    "Width": 0.40926501154899597,
-                    "Height": 0.44643399119377136,
-                    "Left": 0.2812440097332001,
-                    "Top": 0.12307199835777283
-                },
-                "ImageId": "XXXXX-XXXX-XXXX-XXXX-XXXXXXX",
-                "ExternalImageId": "Taro_Yamada",
-                "Confidence": 100.0
-            }
-        }
-    ],
-    "FaceModelVersion": "4.0"
-}
-```
+![1-2-2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-2_.png)
 
-## 2-2. Lambdaを作成する
+### 2-2-3. 「移行」は今回は指定せず[次へ]をクリックする
 
-ステップ2-1で作成したRekognitionのコレクションにアクセスし、指定したS3バケット内の画像がコレクションに登録済みの人物とマッチするかどうか、マッチする場合は誰であるかリターン値として返すLambdaファンクションを作成します。
+「移行」設定をすると、オブジェクトが作成されてから指定した日数の経過をトリガーに、S3 GlacierサービスなどS3の別のストレージクラスにオブジェクトを移行することができるので、より無駄なコストを削減できます。
 
-### 2-2-1. Lambda関数を作成する
+![1-2-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-3.png)
+
+---
+
+#### ＜S3 Glacierとは？＞
+
+Amazon S3 Glacierとは、データアーカイブ、および長期バックアップのためのセキュアで耐久性に優れた**超低コスト**のクラウドストレージサービスです。
+通常のS3と比べると大幅にコストは低くなりますが、データ取り出しに非常に時間がかかります。
+
+- データ取得の速度によって３つのデータ取得オプションを提供します。
+    - 高速取得・・・１分〜５分
+    - 標準取得・・・３時間〜５時間
+    - バルク取得・・・５時間〜１２時間
+
+より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/glacier/)をご確認ください。
+
+---
+
+### 2-2-4. 有効期限では「現行バージョン」「以前のバージョン」のいずれにもチェックを入れ、削除までの期間を設定する
+
+![1-2-4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-4.png)
+
+### 2-2-5. 確認画面に表示されている内容で間違いがなければ[保存]をクリックする
+
+![1-2-5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-5.png)
+
+
+## 2-3. Lambdaを作成
+
+ここでは、スマホからアップロードする顔認証対象画像をステップ2-1で作成したS3バケットに保存した上で、この画像がステップ1で作成したRekognitionのコレクションに登録済みの人物とマッチするかどうか、マッチする場合は誰であるかリターン値として返すLambdaファンクションを作成します。
+
+### 2-3-1. Lambda関数を作成する
 
 - AWSのコンソール画面で、「Lambda」を検索・選択し、[関数の作成]をクリックします。
 ![2-2-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-1_1%E6%9E%9A%E7%9B%AE.png)
@@ -402,7 +221,7 @@ $ aws rekognition search-faces-by-image --image '{"S3Object":{"Bucket":"yamada-r
 次のステップで、Lambdaのソースコードから使用するAWSサービスに対する必要な権限をカスタムで追加します。
 
 
-### 2-2-2. Lambdaに必要な権限を付与する
+### 2-3-2. Lambdaに必要な権限を付与する
 
 - 関数が作成された関数の画面に遷移します。
 - 画面下部の実行ロール欄の「xxxxxxxxx-role-xxxxxxxxロールを表示」をクリックします。
@@ -412,7 +231,8 @@ $ aws rekognition search-faces-by-image --image '{"S3Object":{"Bucket":"yamada-r
 ![2-2-2_3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_3%E6%9E%9A%E7%9B%AE.png)
 
 - ロール詳細画面の「インラインポリシーの追加」をクリック
-- Rekognitionのコレクションへのアクセスや、顔認証のターゲットとなる画像にアクセスできるように、以下の権限をインラインポリシーとして追加し、任意の名前で登録しましょう
+- Rekognitionのコレクションへのアクセスや、顔認証のターゲットとなる画像のS3へのアップロードとアクセスができるように、以下の権限をインラインポリシーとして追加し、任意の名前で登録しましょう
+
   - **Rekognitionのコレクションにアクセスする**
 
     - サービス： `Rekognition`
@@ -422,32 +242,51 @@ $ aws rekognition search-faces-by-image --image '{"S3Object":{"Bucket":"yamada-r
       - Account： すべてにチェック
       - Collection Id：ステップ2-1-5で作成したコレクション名 (例： `yamada-authentication-collection`)
 
-  - **顔認証のターゲットなる画像データにアクセスする**
+  - **顔認証のターゲットとなる画像データをS3にアップロードする・S3に保存された画像データにアクセスする**
 
     - サービス： `S3`
-    - アクション：[読み込み] `GetObject`
-    - リソース：[指定]を選択し、object欄の[ARNを指定]をクリック。ステップ1-1で作成したバケット名（例： `yamada-target-images-bucket`）を入力し、Objectは[すべて]にチェック
+    - アクション：[読み込み] `GetObject`・[書き込み] `PutObject`
+    - リソース：[指定]を選択し、object欄の[ARNを指定]をクリック。ステップ1-1で作成したバケット名（例： `yamada-rekognition-target-images`）を入力し、Objectは[すべて]にチェック
 
-  *「顔認証のターゲットとなる画像データにアクセスする」には、ステップ1-1で作成したデバイスからアップロードした顔画像を保存するS3バケット名が必要です。
-  ステップ2-1-1で作成した「コレクションに追加する顔の画像をアップロードするためのS3バケット」ではありませんので注意しましょう。*
+  *「顔認証のターゲットとなる画像データをS3にアップロードする・S3に保存された画像データにアクセスする」には、ステップ2-1で作成したデバイスからアップロードした顔画像を保存するS3バケット名が必要です。
+  ステップ1-1で作成した「コレクションに追加する顔の画像をアップロードするためのS3バケット」ではありませんので注意しましょう。*
 ![2-2-2_5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_0.png)
 ![2-2-2_6](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_%E7%A2%BA%E8%AA%8D.png)
 
 
-### 2-2-3. Pythonの関数コードを作成する
+### 2-3-3. Pythonの関数コードを作成する
 
+<!-- TODO: コード実装しながら修正する
+    - （受け取ったデータのバリデーションチェック）
+    - 引数の一つであるbase64データをデコード・S3バケットにPutObjectする
+    - 上で保存したパスと・顔コレクション名（定数）、そして２つ目の引数である閾値データを使ってRekognitionを実行する
+    - 認識結果をリターンする
+- Lambdaのテストを行う
+    - テスト用のJSONを作る：どれだけ一致度があれば返すか、の閾値設定
+    - 画像データ（base64）→すごく大きくなるので、このテストに利用する.jsonファイルを作成する
+- 顔認識用API（API Gateway）を作成する
+- APIのテストを行う
+- スマホから実行する
+    - 入力項目
+        - 画像データをアップロードする
+        - 自分が作成したAPIのエンドポイント（部分的）
+        - どれだけ一致度があれば返すか、の閾値設定
+    - （確認）入力不要項目
+        - 顔コレクションの名前はLambdaに定数としてハードコーディングする
+    - 顔認識対象バケットの名前もLambdaに定数としてハードコーディングする -->
+    
 Lambdaが実行するPythonコードを作成します。
 
 - Lambdaの関数画面に戻ってください
 
 - 「関数コード」欄のヘッダー部の右端に「ハンドラ」として `lambda_function.lambda_handler`がデフォルトで指定されています。
-  これは、当Lambdaが呼び出された際に実行される関数が `lambda_function.py`の中の`lambda_handler`という関数だという意味です。
+  これは、当Lambdaが呼び出された際に実行される関数が `lambda_function.py`の中の`lambda_handler`という関数だ、という意味です。
 
 - サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-zybo-and-aws/blob/master/step2/lambda_authentication.py)の `lambda_authentication.py`をご確認ください。
 
 - サンプルプログラムの内容をコピーし、関数コード欄にペーストしてください
 
-- コードの13行目の以下の部分の「`{collection_id}`」を2-1-5で作成したコレクション名（例：`yamada-authentication-collection`）に変更してください
+- コードの13行目の以下の部分の「`{collection_id}`」をステップ1-6-1で作成したコレクション名（例：`yamada-authentication-collection`）に変更してください
 
 ```python:変更前
   # Rekognitionで作成したコレクション名を入れてください
@@ -485,6 +324,7 @@ Lambdaが実行するPythonコードを作成します。
 	- こちらのドキュメントを参考に、実装してください：
 		- https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rekognition.html#Rekognition.Client.search_faces_by_image
 	- `Image`パラメーター内の `'Bytes'`は、今回S3バケット内の画像を指定しているので、必要ありません
+    <!-- 今回のRekognitionへのアクセス方法では、直接イメージのバイトデータを投げることも可能ですが、 ...-->
 	- `'S3Object'`項目内の `'Version'` は、S3バケットのバージョンを意味します。今回は必要ありません
 	- `MaxFaces`は、指定した画像から検出する顔の最大数を指定します
   - `FaceMatchThreshold`は、一致と判断する閾値(%)を指定します
@@ -531,7 +371,7 @@ Lambdaが実行するPythonコードを作成します。
 try文を用いるなどして、Rekognitionへのアクセスの成否を反映したレスポンスを実装してみましょう。
 なお、Lambda関数コード内で実装した `print()`メソッドによる出力は、CloudWatchのログで確認でき、通常はデバッグの用途で利用します。
 
-### 2-2-4. Lambdaのテストを実行する
+### 2-3-4. Lambdaのテストを実行する
 
 Lambdaの関数コードを保存したら、API Gatewayから渡されてくる想定のイベントデータを用意し、Lambdaに渡して、実際の動きをテストしてみましょう。
 
@@ -549,7 +389,8 @@ Lambdaの関数コードを保存したら、API Gatewayから渡されてくる
     "body": {
       "file_name": "image01_20190808181200.jpg",
       "bucket_name": "yamada-target-images-bucket",
-      "threshold": 60
+      "threshold": 60,
+      "image": ,
     }
   }
 ```
@@ -925,137 +766,3 @@ $ python3 upload_target_image.py picture/image01.jpg yamada-target-images-bucket
 "x-amzn-requestid": "xxxxxx-xxxx-xxxx-xxxx-xxxxxx", "content-length": "537", "connection": "keep-alive"}, 
 "RetryAttempts": 0}}}
 ```
-
-
-## 2-5. 顔認証を行うAPIからのレスポンスを利用し、ログ蓄積用のデータを形成する
-
-ステップ2-4では、 `print()`関数を使い、コンソールにAPIレスポンスを表示しました。
-しかし、APIレスポンスのデータ構造は複雑かつ、次のステップ5でのAWS Athena（以下、Athena）とAWS QuickSight（以下、QuickSight）を利用した可視化に不要な情報が多く含まれています。
-ここでは、APIから受け取った今回のデータを次のステップで利用しやすい形に整形します。
-
-- 具体的には以下のような操作を行います：
-
-    - データの階層構造をフラットにし、配列[]の中に人数分の辞書型{}を格納する形にする
-    - マッチした顔があるかどうかについて、認証データとは別にboolean値を返す
-    - 認証データに、デバイスIDやマッチした顔の有無、判定に利用された顔画像ファイル名といったデータを追加する
-    - 顔の座標やHTTPヘッダー情報など、可視化に不要なデータ部分を削ぎ落とす
-
-- AthenaとQuickSightの公式ドキュメントには、それぞれ対応しているデータ構造が明記されていますので、以下をご確認ください。
-    - [Athenaでサポートされるデータ型](https://docs.aws.amazon.com/ja_jp/athena/latest/ug/data-types.html)
-    - [Quicksightのデータソースの制限](https://docs.aws.amazon.com/ja_jp/quicksight/latest/user/data-source-limits.html)
-
-- 今回はGitHub上にデータ整形プログラムを用意しましたので、下記の手順でご使用ください。
-
-### 2-5-1. データフォーマット用のPythonプログラムをダウンロードし、デバイス側に移す
-
-以下のリポジトリをcloneし、その中の `scripts`というディレクトリを開いてください。
-https://github.com/IoTkyoto/iot-handson-zybo-and-aws
-
-### 2-5-2. `scripts`の中のPythonファイル `rekognition_data_formatter.py`を、ステップ2-4-1で作成したプログラムと同じ階層に移動させる
-
-ステップ2-4-1で作成したPythonプログラムは、顔認証を行うWeb APIにアクセスするものです（例： `execute_authentication_api.py`）。
-
-### 2-5-3. ステップ2-4-1で作成したプログラムの中で、`rekognition_data_formatter.py`をimportするよう追記する
-
-- ステップ2-4-1で作成したプログラム（例： `execute_authentication_api.py`）にデータフォーマット処理を追加していきます。
-- サンプルプログラムの12行目のimport文のコメントを外してください。
-  ファイルをimportする場合は `.py`の拡張子まで書く必要はありませんのでご注意ください。
-
-```python:import文
-import rekognition_data_formatter
-```
-
-### 2-5-4. 顔認証APIのレスポンスをフォーマットする
-
-- importした `rekognition_data_formatter`の中の`format_auth_log_data()`という関数にAPIレスポンスを渡し、加工させましょう。
-- サンプルプログラムの105行目〜106行目の呼び出し文のコメントを外してください。
-
-```python:execute_authentication_api.py
-# 2-5-4で使用するAPIレスポンスの加工処理
-response_json = json.loads(response)
-format_result, format_data = rekognition_data_formatter.format_auth_log_data(json.dumps(response_json['payloads']), self.file_name)
-```
-#### データフォーマット機能の解説
-
-**・rekognition_data_formatterのふるまい**
-`rekognition_data_formatter`の中にある関数 `format_auth_log_data()`は、第1引数で与えられたJSON形式のデータを加工します。
-加工に成功した場合、認証された人数分のデータのJSONを配列で返します。データの加工に失敗した場合、空配列を返します。
-また、認証に成功したかどうかも最初の返り値として返します。
-
-**・rekognition_data_formatterが期待する引数**
-
-- 第1引数: JSON形式の、APIレスポンスを格納した変数（例： `json.dumps(payloads)`）
-- 第2引数: ステップ2-4-1のファイルで第2引数に指定した画像ファイル名（例： `image01-20190731070707.jpg`）
-
-**・rekognition_data_formatterの呼び出し方**
-呼び出し方の詳細な例はサンプルプログラムをご参考ください([/scripts/test_rekognition_data_formatter.py](https://github.com/IoTkyoto/iot-handson-zybo-and-aws/blob/master/scripts/test_rekognition_data_formatter.py))。
-この`test_rekognition_data_formatter.py`を実行すると、コード内に記述されたサンプルデータがフォーマットされて出力されます。
-また、ステップ2-5-5で追記する`create_auth_log.log`というログファイルが出力されるようになっています。
-
-```python:呼び出し例
-rekognition_data_formatter.format_auth_log_data(json.dumps(payloads), `image01-20190731070707.jpg`)
-```
-
-**・rekognition_data_formatterが返す値**   
-この`rekognition_data_formatter.format_auth_log_data()`の挙動は以下の通りです。
-最初にboolean値で `True/False`を返すことで、ドアの開閉を行うかどうかの判定基準を与えています。
-
-- マッチする顔があった場合：
-
-```python
-return True, [{加工済データ}x人数分]
-```
-
-- マッチする顔がなかった場合：
-
-```python
-return False, [加工済みデータ]
-```
-
-- 顔の認証を行なっていたかどうかに関わらず、データの加工処理に失敗した場合：
-
-```python
-return False, [空配列]
-```
-
-### 2-5-5. ログファイル出力をさせる
-
-- ドア開閉プログラムにデータを渡す為に、`rekognition_data_formatter`の返り値をログファイルに出力させるコードを追記しましょう。
-- サンプルプログラムの85行目~87行目、109行目〜110行目のコメントアウトを外してください。
-- 「`create_auth_log.log`」というファイルに認証結果が書き込まれます。
-
-```python:execute_authentication_api.py
-
-def write_log(self, format_result, format_data):
-   with open('create_auth_log.log', 'w') as f:
-      f.write(str(format_result) + ',\n' + json.dumps(format_data))
-
-・・・（中略）・・・
-
-# 2-5-5で使うログ出力
-if format_data != None:
-   self.write_log(format_result, format_data)
-```
-#### 「create_auth_log.log」のデータ内容
-- １行目：認証結果（True/False）
-- ２行目：人数分の結果データ
-
-### 2-5-6. `format_auth_log_data()`からの返り値によって処理を分岐させる
-
-- `rekognition_data_formatter.format_auth_log_data()`の返り値が空配列でなければ、ステップ4で作成予定のログ送信プログラムに引数として渡す予定です。
-- ただし、ステップ4のプログラムはまだ作成していないので、返り値が空配列かどうかの判定をif文で分岐させ、このステップではコメントアウトしておきましょう。
-
-- サンプルプログラム81行目〜83行目、112行目~114行目のコメントアウトは**外さない**でください。
-
-```python:execute_authentication_api.py
-# def call_pub_auth_log_data(self, format_data):
-#    for data in format_data:
-#        subprocess.call(["python3", PUB_AUTH_LOG_PATH, json.dumps(data)])
-
-・・・（中略）・・・
-
-# step4の関数を呼び出す処理
-# if format_data != []:
-#    self.call_pub_auth_log_data(format_data)
-```
-
