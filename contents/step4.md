@@ -460,69 +460,32 @@ QOS0あるいはQOS1を使用してください。
 
 ### 4-5-2. デバイスに設定情報を登録する
 
+アプリに設定を登録します。
 
+- 「顔画像分析」画面を開きます
+- 「Publish設定」アイコンをクリックする
+- 以下の設定内容を設定する
+    - アクセスキーID：ステップ4-4-2でダウンロードしたCSVファイルの「Access key ID」の値
+    - シークレットアクセスキー：ステップ4-4-2でダウンロードしたCSVファイルの「Secret access key」の値
+    - リージョン：IoT Coreを構築したAWSリージョン名（例：東京の場合は「ap-northeast-1」）
+    - AWS IoTエンドポイント：構築したIoT Coreのエンドポイント
+    - トピック名：ルールで指定したトピック名（例：指示通り作成している場合は「handson/analysisLogData」）
+- 「保存」をクリックする
 
-### 4-5-2. デバイスから結果データをIoT Coreのトピックにパブリッシュする
+#### ※ AWS IoT エンドポイントの確認方法
+- AWSコンソールで「IoT Core」の画面を開く
+- 左メニューの「設定」をクリックする
+- 設定画面のカスタムエンドポイントに表示されている「xxxxxxx-ats.xxxxxx.amazonaws.com」がエンドポイントとなります
+※ IoT Coreのエンドポイントはアカウントごとのリージョン単位に１つです
 
-#### ４−5−2−1. 顔認証・顔分析結果ログのアップロード
+### 4-5-3. デバイスから結果データをパブリッシュする
 
-- 
+アプリから実際に顔画像分析結果データを送信します。
+ステップ4−5−2の設定が正しく行われていれば、顔画像分析を実行した結果データをバックグラウンドで、IoT Coreの指定トピックにPublishしてくれます。
 
-- ステップ2-5-6で作成したプログラム「`execute_authentication_api.py`」の28行目、81行目〜83行目と113行目〜114行目のコメントアウトを外しましょう。
+### 4-5-4. データが保存されていることを確認する
 
-```python:execute_authentication_api.py
-
-# step4で作成するログ送信用プログラムのパス
-PUB_AUTH_LOG_PATH = '../step4/pub_auth_log_data.py' 
-
-・・・（省略）・・・
-
-def call_pub_auth_log_data(self, format_data):
-     for data in format_data:
-          subprocess.call(["python3", PUB_AUTH_LOG_PATH, json.dumps(data)])
-
-・・・（省略）・・・
-
-# step4の関数を呼び出す処理
-if format_data != []:
-   self.call_pub_auth_log_data(format_data)
-
-```
-
-- ステップ3-7で作成したプログラム「`execute_analysis_api.py`」の29行目、72行目〜74行目と96行目〜97行目のコメントアウトを外しましょう。
-
-```python:execute_analysis_api.py
-
-# step4で作成するログ送信用プログラムのパス
-PUB_ANALYSIS_LOG_PATH = '../step4/pub_analysis_log_data.py'
-
-・・・（省略）・・・
-
-def call_pub_analysis_log_data(self, format_data):
-     for data in format_data:
-          subprocess.call(["python3", PUB_ANALYSIS_LOG_PATH, json.dumps(data)])
-
-・・・（省略）・・・
-
-# step4の関数を呼び出す処理
-if format_data != []:
-     self.call_pub_analysis_log_data(format_data)
-
-```
-
-- 画像のアップロードから顔認証・顔分析を行い結果ログのアップロードまでの一連御処理を実行しましょう
-
-```shell:実行結果
-$ python3 upload_target_image.py picture/image01.jpg yamada-target-images-bucket
-[succeeded!] upload file name: image01_20190819153823.jpg
-{'ResponseMetadata': {'RequestId': 'xxxxxx-xxxx-xxxx-xxxx-xxxxxx', 'HTTPStatusCode': 200, 
-'HTTPHeaders': {'content-type': 'application/json', 'content-length': '65', 'date': 'Mon, 19 Aug 2019 06:38:27 GMT', 
-'x-amzn-requestid': 'xxxxxx-xxxx-xxxx-xxxx-xxxxxx', 'connection': 'keep-alive'}, 'RetryAttempts': 0}}
-・・・（省略）・・・
-```
-
-- 渡したデータが、作成したS3バケットに格納されていたら成功です。
-
+顔画像分析した結果として画面に表示されているデータと同じ内容のファイルが、作成したS3バケットに格納されていたら成功です。
 
 ---
 
@@ -538,15 +501,16 @@ $ python3 upload_target_image.py picture/image01.jpg yamada-target-images-bucket
     
 #### データが表示されない場合
 
-- ステップ4-6-1で作成したPythonプログラムによってデータを送信しているにも関わらず、データが表示されない場合
+- トピックに送信したデータが到達していない場合
 
 	- 通信状態に問題はありませんか？
-	- ステップ4-5でポリシーをアタッチしたIAMユーザーを利用していますか？
-	- ステップ4-5でアタッチしたポリシーは正しいですか？
-	- トピック名は正しいですか？
-	- リージョンは正しいですか？
+	- ステップ4-4でポリシーをアタッチしたIAMユーザーを設定情報に登録していますか？
+	- ステップ4-4でアタッチしたポリシーは正しいですか？
+	- リージョンの設定内容は正しいですか？
+	- AWS IoT AWS IoT エンドポイントの設定内容は正しいですか？
+	- トピック名の設定内容は正しいですか？
 
-- データは到達しているが、DynamoDBやS3にデータが格納されない場合
+- データは到達しているが、S3にデータが格納されない場合
 
 	- ルールの設定は正しいですか？
 	- ルールにアタッチされているIAMロールに問題はありませんか？
