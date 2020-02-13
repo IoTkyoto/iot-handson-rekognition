@@ -91,120 +91,11 @@ API Gatewayがサポートする認証方式の１つで、所定のキー(文�
 https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-api-usage-plans.html
 
 
-## 2-1. 認識したい顔画像をアップロードするためのS3バケットを作成
+## 2-1. Lambdaを作成
 
-この項目では、ステップ1-1と同様の手順で、画像認識の対象としてスマホからアップロードする画像の保存先となるバケットを作成していきます。
-一点、前回との違いとして、S3バケット内のデータにライフサイクルを設定します。画像認識用にデバイスから送信された画像は長期間保存する必要はありませんので、オブジェクト作成から１日で削除されるように設定します。
+ここでは、スマホからAPI Gatewayを通して受け取った顔画像が、ステップ1で作成したRekognitionのコレクションに登録済みの人物とマッチするかどうか、マッチする場合は誰であるかリターン値として返すLambdaファンクションを作成します。
 
-### 2-1-1. AWSのコンソール画面で「S3」を検索・選択し[バケットを作成する]をクリックする
-
-![1-1-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-1_1.png)
-
-![1-1-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-1_2.png)
-
-### 2-1-2. バケット名を入力し[次へ]をクリックする
-
-- バケット名：任意の名称（例：yamada-rekognition-target-images）
-- リージョン：アジアパシフィック（東京）
-- 既存のバケットから設定をコピー：ブランク
-
-![1-1-2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-2_1.png)
-
-**【注意】 バケット名の一意性**
-
-Amazon S3のバケット名はグローバルに一意であり、名前空間はすべてのAWSアカウントによって共有されています。
-そのためバケット名は世界で一意のものを指定する必要があります。
-重複するバケット名がすでに他の誰かに作成されている場合、その名前は利用できません。
-S3バケットの命名のガイドラインについては[バケットの制約と制限](https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/BucketRestrictions.html)のサイトを参照してください。
-
-**【注意】 リージョン指定**
-
-リージョンが「アジアパシフィック(東京)」になっていることを確認してください。
-今回はすべてのAWSサービスを東京リージョンで構築します。
-リージョンが異なると、サービス間連携の遅延や他のAWSサービスと連携する上での困難等が生じることがございます。
-
-### 2-1-3. 「オプションの設定」は何も設定せずに[次へ]をクリックする
-
-今回はオプションの設定は使用しませんので、何もチェックをつけずに「次へ」をクリックしてください。
-
-![1-1-3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-1-3_1.png)
-
-### 2-1-4. 「アクセス許可の設定」を確認し[次へ]をクリックする
-
-アクセス許可の設定では、S3バケットに対してアクセスできる権限を指定します。
-「**パブリックアクセスをすべてブロック**」にチェックが入っているかを確認してください。
-
-**【注意】 S3バケットのパブリックアクセスについて**
-「パブリックアクセスが有効」な状態のS3バケットは、世界中の人々に公開されている状態となります。
-S3バケットのパブリックアクセスが原因となった顧客情報の漏洩などの事件も発生しておりますので、アクセス権限の設定はお気をつけください。
-![1-1-４](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-3_2枚目_.png)
-
-
-### 2-1-５. 確認画面に表示されている内容を確認し[バケットを作成]をクリックする
-
-バケットの作成リージョンが「アジアパシフィック（東京）」になっていることや、パブリックアクセスをブロックするようになっていることを確かめてからバケットを作成します。
-
-![1-1-５](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-1-4.png)
-
-
-## 2-2. バケットのライフサイクルを設定
-
-S3にはオブジェクト単位に設定可能なライフサイクル管理の機能があります。
-これはオブジェクトがライフサイクルを通じてコスト効率の高い方法で保存されるように管理する仕組みです。
-オブジェクト作成からの経過日数をトリガーとして、よりコスト効率の高いストレージクラスへの移行やオブジェクトの削除を行うことが出来ます。
-詳細については公式ドキュメント「[オブジェクトのライフサイクル管理](https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/object-lifecycle-mgmt.html)」をご確認ください。
-
-
-
-### 2-2-1. [管理]の[ライフサイクル]から[ライフサイクルルールの追加]をクリックする
-
-- バケット検索に先ほど作成したバケットの名前の先頭数文字を入力し絞り込み、対象のバケット名をクリックする
-- 「管理」タブをクリックし、「＋ライフサイクルルールの追加」をクリックする
-![1-2-1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-1_.png)
-
-### 2-2-2. ルール名を入力して[次へ]をクリックする
-
-- ルール名：任意の名称（例：remove-in-a-day）
-- フィルターを追加してプレフィックス/タグのみを対象にする：ブランク
-
-![1-2-2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-2_.png)
-
-### 2-2-3. 「移行」は今回は指定せず[次へ]をクリックする
-
-「移行」設定をすると、オブジェクトが作成されてから指定した日数の経過をトリガーに、S3 GlacierサービスなどS3の別のストレージクラスにオブジェクトを移行することができるので、より無駄なコストを削減できます。
-
-![1-2-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-3.png)
-
----
-
-#### ＜S3 Glacierとは？＞
-
-Amazon S3 Glacierとは、データアーカイブ、および長期バックアップのためのセキュアで耐久性に優れた**超低コスト**のクラウドストレージサービスです。
-通常のS3と比べると大幅にコストは低くなりますが、データ取り出しに非常に時間がかかります。
-
-- データ取得の速度によって３つのデータ取得オプションを提供します。
-    - 高速取得・・・１分〜５分
-    - 標準取得・・・３時間〜５時間
-    - バルク取得・・・５時間〜１２時間
-
-より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/glacier/)をご確認ください。
-
----
-
-### 2-2-4. 有効期限では「現行バージョン」「以前のバージョン」のいずれにもチェックを入れ、削除までの期間を設定する
-
-![1-2-4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-4.png)
-
-### 2-2-5. 確認画面に表示されている内容で間違いがなければ[保存]をクリックする
-
-![1-2-5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step1/1-2-5.png)
-
-
-## 2-3. Lambdaを作成
-
-ここでは、スマホからアップロードする顔認証対象画像をステップ2-1で作成したS3バケットに保存した上で、この画像がステップ1で作成したRekognitionのコレクションに登録済みの人物とマッチするかどうか、マッチする場合は誰であるかリターン値として返すLambdaファンクションを作成します。
-
-### 2-3-1. Lambda関数を作成する
+### 2-1-1. Lambda関数を作成する
 
 - AWSのコンソール画面で、「Lambda」を検索・選択し、[関数の作成]をクリックします。
 ![2-2-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-1_1%E6%9E%9A%E7%9B%AE.png)
@@ -221,7 +112,7 @@ Amazon S3 Glacierとは、データアーカイブ、および長期バックア
 次のステップで、Lambdaのソースコードから使用するAWSサービスに対する必要な権限をカスタムで追加します。
 
 
-### 2-3-2. Lambdaに必要な権限を付与する
+### 2-1-2. Lambdaに必要な権限を付与する
 
 - 関数が作成された関数の画面に遷移します。
 - 画面下部の実行ロール欄の「xxxxxxxxx-role-xxxxxxxxロールを表示」をクリックします。
@@ -231,7 +122,7 @@ Amazon S3 Glacierとは、データアーカイブ、および長期バックア
 ![2-2-2_3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_3%E6%9E%9A%E7%9B%AE.png)
 
 - ロール詳細画面の「インラインポリシーの追加」をクリック
-- Rekognitionのコレクションへのアクセスや、顔認証のターゲットとなる画像のS3へのアップロードとアクセスができるように、以下の権限をインラインポリシーとして追加し、任意の名前で登録しましょう
+- Rekognitionのコレクションへのアクセスができるように、以下の権限をインラインポリシーとして追加し、任意の名前で登録しましょう
 
   - **Rekognitionのコレクションにアクセスする**
 
@@ -242,38 +133,12 @@ Amazon S3 Glacierとは、データアーカイブ、および長期バックア
       - Account： すべてにチェック
       - Collection Id：ステップ2-1-5で作成したコレクション名 (例： `yamada-authentication-collection`)
 
-  - **顔認証のターゲットとなる画像データをS3にアップロードする・S3に保存された画像データにアクセスする**
 
-    - サービス： `S3`
-    - アクション：[読み込み] `GetObject`・[書き込み] `PutObject`
-    - リソース：[指定]を選択し、object欄の[ARNを指定]をクリック。ステップ1-1で作成したバケット名（例： `yamada-rekognition-target-images`）を入力し、Objectは[すべて]にチェック
-
-  *「顔認証のターゲットとなる画像データをS3にアップロードする・S3に保存された画像データにアクセスする」には、ステップ2-1で作成したデバイスからアップロードした顔画像を保存するS3バケット名が必要です。
-  ステップ1-1で作成した「コレクションに追加する顔の画像をアップロードするためのS3バケット」ではありませんので注意しましょう。*
 ![2-2-2_5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_0.png)
 ![2-2-2_6](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_%E7%A2%BA%E8%AA%8D.png)
 
 
-### 2-3-3. Pythonの関数コードを作成する
-
-<!-- TODO: コード実装しながら修正する
-    - （受け取ったデータのバリデーションチェック）
-    - 引数の一つであるbase64データをデコード・S3バケットにPutObjectする
-    - 上で保存したパスと・顔コレクション名（定数）、そして２つ目の引数である閾値データを使ってRekognitionを実行する
-    - 認識結果をリターンする
-- Lambdaのテストを行う
-    - テスト用のJSONを作る：どれだけ一致度があれば返すか、の閾値設定
-    - 画像データ（base64）→すごく大きくなるので、このテストに利用する.jsonファイルを作成する
-- 顔認識用API（API Gateway）を作成する
-- APIのテストを行う
-- スマホから実行する
-    - 入力項目
-        - 画像データをアップロードする
-        - 自分が作成したAPIのエンドポイント（部分的）
-        - どれだけ一致度があれば返すか、の閾値設定
-    - （確認）入力不要項目
-        - 顔コレクションの名前はLambdaに定数としてハードコーディングする
-    - 顔認識対象バケットの名前もLambdaに定数としてハードコーディングする -->
+### 2-1-3. Pythonの関数コードを作成する
     
 Lambdaが実行するPythonコードを作成します。
 
@@ -282,11 +147,12 @@ Lambdaが実行するPythonコードを作成します。
 - 「関数コード」欄のヘッダー部の右端に「ハンドラ」として `lambda_function.lambda_handler`がデフォルトで指定されています。
   これは、当Lambdaが呼び出された際に実行される関数が `lambda_function.py`の中の`lambda_handler`という関数だ、という意味です。
 
-- サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-zybo-and-aws/blob/master/step2/lambda_authentication.py)の `lambda_authentication.py`をご確認ください。
+- サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/lambda_authentication.py)の `lambda_authentication.py`をご確認ください。
 
 - サンプルプログラムの内容をコピーし、関数コード欄にペーストしてください
 
-- コードの13行目の以下の部分の「`{collection_id}`」をステップ1-6-1で作成したコレクション名（例：`yamada-authentication-collection`）に変更してください
+<!-- TODO: 行数確認 -->
+- コードの14行目の以下の部分の「`{collection_id}`」を、ステップ1-6-1で作成したコレクション名（例：`yamada-authentication-collection`）に変更してください
 
 ```python:変更前
   # Rekognitionで作成したコレクション名を入れてください
@@ -309,21 +175,21 @@ Lambdaが実行するPythonコードを作成します。
   import json                       # JSONフォーマットのデータを扱うために利用します
   import boto3                      # AWSをPythonから操作するためのSDKのライブラリです
   from datetime import datetime     # この関数を動かした（＝顔の認証を行なった）時間をtimestampとして作成するのに利用します
-  from botocore.exceptions import ClientError  # boto3の実行時に発生する例外クラスです
+  import botocore.exceptions  # boto3の実行時に発生する例外クラスです
+  import base64 # base64フォーマットの画像データをRekognitionが認識できる形に変換するのに利用します
 ```
 
 - API Gatewayに投げ込まれたデータは、 `lambda_handler`の引数となっている `event`の中に `body`として渡されます
 	- `body`はJSON形式で渡されますので、Pythonで処理できる形にするために `json.loads`メソッドを利用しましょう
 	- 今回、APIが呼ばれる際のパラメーターとして、以下のデータを受け取ることを想定して実装します
-		- `bucket_name`：認証を行いたい顔画像を保存しているS3バケット名
-		- `file_name`：上で指定したS3バケットに保存されている、認証を行いたい顔画像ファイル名
-		- `threshold`：Rekognition実行時、コレクションに登録している顔との一致度合いがいくら以上の時に結果を返すか、という閾値(%)
+		- `image_base64`：認証を行いたい顔画像ファイル(pngもしくはjpeg)をbase64でエンコードしたデータ(文字列型)
+		- `threshold`：Rekognition実行時、コレクションに登録している顔との一致度合いがいくら以上の時に結果を返すか、という閾値(%)(数値型)。オプション項目なので、設定しない場合はRekognitionが持つデフォルト値の80%が自動的にセットされる
 
 - boto3 client `rekognition`のメソッド `search_faces_by_image`を使用する
 	- 引数として、APIから受け取るデータの他に対象のコレクションIDの指定が必要です。
 	- こちらのドキュメントを参考に、実装してください：
 		- https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rekognition.html#Rekognition.Client.search_faces_by_image
-	- `Image`パラメーター内の `'Bytes'`は、今回S3バケット内の画像を指定しているので、必要ありません
+	- `Image`パラメーター内の `'Bytes'`は、画像のバイナリデータを指定します
     <!-- 今回のRekognitionへのアクセス方法では、直接イメージのバイトデータを投げることも可能ですが、 ...-->
 	- `'S3Object'`項目内の `'Version'` は、S3バケットのバージョンを意味します。今回は必要ありません
 	- `MaxFaces`は、指定した画像から検出する顔の最大数を指定します
@@ -336,10 +202,7 @@ Lambdaが実行するPythonコードを作成します。
   search_result = REKOGNITION_CLIENT.search_faces_by_image(
       CollectionId=self.collection_id,
       Image={
-            'S3Object': {
-              'Bucket': s3_bucket,
-              'Name': s3_obj
-            }
+            'Bytes': image_binary
       },
       MaxFaces=self.max_faces,
       FaceMatchThreshold=threshold
@@ -351,13 +214,13 @@ Lambdaが実行するPythonコードを作成します。
 	- 下記の例のように `update`メソッドを利用すると、辞書型の中に辞書型のデータを入れることができます
 		- `payloads.update(data)`（引数 `data`は `search_faces_by_image`の戻り値が格納されている変数）
 	- `'timestamp'`の作成には、import一覧（例）にある標準モジュールの `datetime`が利用できます
-	- `'timestamp'`の値のフォーマットは、後の可視化ステップに対応するために、`'YYYY-MM-DD hh:mm:ss'`となるようにしてください
+	- `'timestamp'`の値のフォーマットは、可視化をする場合などに使いやすい`'YYYY-MM-DD hh:mm:ss'`が良いでしょう
 	- レスポンスデータは `json.dumps`メソッドを利用してJSON形式にして返しましょう
 
 ```python:lambda_function.py
   # タイムスタンプ生成
   date_now = datetime.now()
-  # dictionary型の変数定義
+  # 辞書型の変数定義
   payloads: dict = {}
   # タイムスタンプを設定
   payloads['timestamp'] = str(date_now.strftime('%Y-%m-%d %H:%M:%S'))
@@ -371,7 +234,7 @@ Lambdaが実行するPythonコードを作成します。
 try文を用いるなどして、Rekognitionへのアクセスの成否を反映したレスポンスを実装してみましょう。
 なお、Lambda関数コード内で実装した `print()`メソッドによる出力は、CloudWatchのログで確認でき、通常はデバッグの用途で利用します。
 
-### 2-3-4. Lambdaのテストを実行する
+### 2-1-4. Lambdaのテストを実行する
 
 Lambdaの関数コードを保存したら、API Gatewayから渡されてくる想定のイベントデータを用意し、Lambdaに渡して、実際の動きをテストしてみましょう。
 
@@ -382,33 +245,26 @@ Lambdaの関数コードを保存したら、API Gatewayから渡されてくる
   - 新しいテストイベントの作成：チェック
   - イベントテンプレート：Hello World（デフォルト）
   - イベント名：任意の名前（例：AuthTest）
-  - テストデータ：以下のテストデータ。実際に存在するバケット名やファイル名に置き換えてください。
+  - テストデータ：以下のjsonファイルの内容。画像のデータや閾値を適宜変更してください。
 
-```json:テストイベント用JSONデータ
-  {
-    "body": {
-      "file_name": "image01_20190808181200.jpg",
-      "bucket_name": "yamada-target-images-bucket",
-      "threshold": 60,
-      "image": ,
-    }
-  }
-```
+- テストデータは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/lambda_event_sample.json)の `lambda_event_sample.json`をご確認ください。
+
+- テストデータの内容をコピーし、テストイベントのコード欄に貼り付けてください
 
 ![2-2-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_2.png)
 
-- 作成したら、[テスト]をクリックし、実行結果を確認しましょう。関数の実行結果は、中をスクロールして見ることが可能です。
+- 作成したら、[テスト]をクリックし、実行結果を確認しましょう。関数の実行結果は、中をスクロールして見ることが可能です
 ![2-2-4_3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_3.png)
 ![2-2-4_4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_4.png)
 ![2-2-4_5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_5.png)
 
 - テストの結果として、「statusCode:200」と「ExternalImageId」として対象者のタグが返ってきていれば成功です。
 
-## 2-3. API Gatewayを作成する
+## 2-2. API Gatewayを作成する
 
 デバイス側から作成したLambdaを使用するために、API GatewayでREST APIを作成します。
 
-### 2-3-1. APIを作成する
+### 2-2-1. APIを作成する
 
 - AWSのコンソール画面で「API Gateway」を検索し、API Gatewayのコンソール画面を開きます。
 - [+APIの作成]をクリックします。
@@ -421,7 +277,7 @@ Lambdaの関数コードを保存したら、API Gatewayから渡されてくる
     - エンドポイントタイプ： **リージョン**
 ![2-3-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-1_2%E6%9E%9A%E7%9B%AE.png)
 
-### 2-3-2. APIにリソースを追加する
+### 2-2-2. APIにリソースを追加する
 
 作成直後のAPIには、具体的なアクセス先のリソースが存在していない状態です。
 APIにリソースを追加し、ステップ2-2で作成したLambdaを呼び出すAPIリソースを作成します。
@@ -452,7 +308,7 @@ https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/how-to-cors.h
 
 ---
 
-### 2-3-3. APIにメソッドを追加する
+### 2-2-3. APIにメソッドを追加する
 
 APIにはHTTPメソッドが必要です。
 ステップ2-2-3で作成したLambda実行コードに必要なデータをAPI経由で渡す必要があるため、レスポンスボディが使用できる`POST`にします。
@@ -462,7 +318,7 @@ APIにはHTTPメソッドが必要です。
 
 - メソッド欄の「OPTIONS」の下にコンボボックスが表示されるため、「POST」を選択し☑️をクリックする
 
-### 2-3-4. APIの統合先をセットする
+### 2-2-4. APIの統合先をセットする
 
 APIメソッドを設定したら、バックエンドのエンドポイントに統合する必要があります。
 バックエンドのエンドポイントは、統合エンドポイントとも呼ばれ、Lambda関数、HTTPウェブページ、または AWSのサービスアクションとして使用できます。
@@ -472,7 +328,7 @@ APIメソッドを設定したら、バックエンドのエンドポイント�
   - 統合タイプ：Lambda 関数  
   - Lambda プロキシ統合の使用：チェックを入れる
   - Lambda リージョン：`ap-northeast-1`
-  - Lambda 関数：ステップ2-2-1で作成したLambda関数を入力（例：yamada_lambda_authentication）
+  - Lambda 関数：ステップ2-1-1で作成したLambda関数を入力（例：yamada_lambda_authentication）
   - デフォルトタイムアウトの使用：チェックを入れる
 ![2-3-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-4_1%E6%9E%9A%E7%9B%AE.png)
 
@@ -480,6 +336,7 @@ APIメソッドを設定したら、バックエンドのエンドポイント�
 ![2-3-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-4_2%E6%9E%9A%E7%9B%AE_1_.png)
 
 #### ＜Lambdaプロキシ統合とは？＞
+
 Amazon API Gateway Lambdaプロキシ統合は、単一のAPIメソッドのセットアップでAPIを構築するシンプル、強力、高速なメカニズムです。
 Lambdaプロキシ統合は、クライアントが単一のLambda関数をバックエンドで呼び出すことを可能にします。
 クライアントがAPIリクエストを送信すると、API Gatewayは、統合されたLambda関数にリクエストをそのまま渡します。
@@ -488,7 +345,7 @@ Lambdaプロキシ統合は、クライアントが単一のLambda関数をバ�
 
 詳細は[公式ドキュメント](https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html)をご確認ください。
 
-### 2-3-5. APIへのアクセスにAPIキーを必要とする設定にする
+### 2-2-5. APIへのアクセスにAPIキーを必要とする設定にする
 
 APIを公開すると、エンドポイントURLを知っている人は誰でもアクセス可能となります。
 今回作成するAPIには、簡易な認証機能としてAPIキーによる認証を追加しましょう。
@@ -503,7 +360,7 @@ OPTIONSメソッドは、リソース作成時にCORSを有効にすることで
 このメソッドは、リソースに対するアクセスの際に、必ず最初に経由されます。
 これにより、受け取ったリクエストのオリジンをOPTIONSのものと置き換えることで、オリジンの違いによるアクセス拒否を回避しています。
 
-### 2-3-6. APIをデプロイする
+### 2-2-6. APIをデプロイする
 
 作成したAPIは、デプロイすることで外部からアクセスすることが可能となります。
 作成したAPIをデプロイしてみましょう。
@@ -524,13 +381,14 @@ OPTIONSメソッドは、リソース作成時にCORSを有効にすることで
 ステージは、APIを公開後も安定してAPIのエンドポイントを供給しながら開発を行う上で必須の機能です。
 
 #### ＜API Gatewayのステージとは？＞
+
 ステージは、デプロイに対して名前を付けたAPIのスナップショットとなります。
 API Gatewayでは、ステージごとに別の設定やステージごとの変数を定義することが出来ます。
 また、APIにアクセスするエンドポイントURLにはステージ名が含まれますので、例えば「v1.0」「v2.0」というステージを用意して
 過去バージョンを保証したデプロイや、ステージを利用したカナリアリリースが可能となります。
 詳細は[公式サイト](https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/set-up-stages.html)をご確認ください。
 
-### 2-3-7. APIの使用量プランとAPIキーを作成する
+### 2-2-7. APIの使用量プランとAPIキーを作成する
 
 APIキーに対して使用量プランを設定しましょう。
 以下の説明を参考に紐付けるAPIキーでのアクセスの頻度を想定して、使用量を設定してください。
@@ -586,7 +444,7 @@ APIキーは使用できる回数分だけ「トークンバケット」に補�
 - これで、作成した使用量プランとデプロイしたAPIのステージ、そしてAPIキーが紐づきました。
   APIの使用量プランは、デプロイしたAPI Gatewayのステージと紐づきますので、ご注意ください。
 
-### 2-3-8. cURLでAPIをテストする
+### 2-2-8. cURLでAPIをテストする
 
 cURLの `curl`コマンドを利用して、前のステップで作成したAPIにアクセスしてみましょう。
 
@@ -598,16 +456,17 @@ URLの書き方でファイルの送受信が行えるオープンソースの�
 
 ---
 
-デバイスのコマンドラインに下記の例の通りコマンドを入力してください。
+今回、画像データが大きく、コマンドラインへの直接入力に向かないため、下記のshellファイルをコマンドラインから実行します。
 
-```shell:実行コマンド例
-curl -X POST "https://{api_id}.execute-api.ap-northeast-1.amazonaws.com/{stage}/{resource}" \
--H "X-Api-Key: {api_key}" -H "Content-Type: application/json" \
--d "{\"file_name\":\"image01_20190808181200.jpg\",\"bucket_name\":\"yamada-target-images-bucket\",\"threshold\":60}"
-```
+- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/curl_test_rekognition_sample.sh)の `curl_test_rekognition_sample.sh`をご確認ください。
+
+- 下記の解説に従い、shellファイルの中身を確認・編集してください。
 
 #### curlコマンドの解説
 
+上記のshellファイルの中身を確認しながら、適宜修正してください。
+
+<!-- TODO: ここから追記・修正 -->
 - `-X`でHTTPメソッド `POST`を指定します
 - 引数でAPIのURLを記述します。URLをダブルクォーテーションで囲み、 URL内の `{}`部分を下記を参考に変更してください
 	- `{api_id}` → 下記の「APIのエンドポイントの確認方法」にあるAPIのエンドポイントのうち「.execute-api.api-northeast-1.~」の前の英数字部分
@@ -630,6 +489,15 @@ AWSのコンソールで、ステップ2-3-6でデプロイしたAPIのステー
 AWSのコンソールで、ステップ2-3-7で作成したAPIキーを[表示]します。
 
 ![2-4-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_9%E6%9E%9A%E7%9B%AE.png)
+
+- 変数の入力が終わったら、ファイルを更新し、実行します
+
+- 現在コマンドラインがいるディレクトリ内から、shellファイルが存在するディレクトリを正しく指定するよう注意ください。タブキーでの引数の自動補完を活用しましょう
+
+
+```shell:実行コマンド例
+sh curl_test_rekognition_sample.sh
+```
 
 - コマンドを実行すると、Lambda側で実装したレスポンスが返ってきます。
 
