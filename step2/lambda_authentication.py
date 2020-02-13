@@ -6,10 +6,8 @@ Method: POST
 import json
 import boto3
 from datetime import datetime
-from botocore.exceptions import ClientError
-import base64
-import uuid
 import botocore.exceptions
+import base64
 
 REKOGNITION_CLIENT = boto3.client('rekognition')
 # Rekognitionで作成したコレクション名を入れてください
@@ -123,15 +121,13 @@ class Rekognition():
                     errors.append('key "{}" not found'.format(key_name))
                elif body[key_name] == '':
                     errors.append('no value found for "{}"'.format(key_name))
-               elif not isinstance(body[key_name], key_type):
+               elif type(body[key_name]) not in key_type:
                     errors.append('invalid value type: "{}"'.format(key_name))
           for key_info in self.optional_keys:
                key_name = key_info['name']
                key_type = key_info['type']
                if key_name in body.keys():
-                    if not isinstance(body[key_name], key_type):
-                         errors.append('invalid value type: "{}"'.format(key_name))
-                    elif bool not in key_type and isinstance(body[key_name], bool):
+                    if type(body[key_name]) not in key_type:
                          errors.append('invalid value type: "{}"'.format(key_name))
           if errors:
                return self.make_response(400, '[FAILED]' + ', '.join(errors))
