@@ -467,33 +467,39 @@ URLの書き方でファイルの送受信が行えるオープンソースの�
 上記のshellファイルの中身を確認しながら、適宜修正してください。
 
 <!-- TODO: ここから追記・修正 -->
+
+**echoコマンドについて**
+
+- 画像データが大きいため、`echo`コマンドを利用してAPIのリクエストボディに含めたいデータを出力します
+- `echo`の引数である文字列内の`threshold`や `image_base64`の値を書き換え、APIに投げ込むデータを適宜変更してください
+- パイプ（ `|`）はデータの受け渡しを行います。今回の場合、 `echo`が出力したデータを次のコマンド、つまり `curl`に渡します
+
+**curlコマンドについて**
 - `-X`でHTTPメソッド `POST`を指定します
 - 引数でAPIのURLを記述します。URLをダブルクォーテーションで囲み、 URL内の `{}`部分を下記を参考に変更してください
 	- `{api_id}` → 下記の「APIのエンドポイントの確認方法」にあるAPIのエンドポイントのうち「.execute-api.api-northeast-1.~」の前の英数字部分
-	- `{stage}` → 2-3-6で作成したAPIをデプロイしたステージ名（例：prod）
-	- `{resource}` → 2-3-2で作成したAPIのリソース名（例：search）
-- `-H`でヘッダーを表します。記述するヘッダーは下記の2つです
-	- ステップ2-3-7で作成したAPIキーを、 `-H "X-Api-Key: {api_key}"`という形式で記述します。下記「APIキーの確認方法」に沿って確認してください
-	- やり取りするデータ形式を指定するため `-H "Content-Type: application/json"`と記述します
+	- `{stage}` → ステップ2-2-6で作成したAPIをデプロイしたステージ名（例：prod）
+	- `{resource}` → ステップ2-2-2で作成したAPIのリソース名（例：search）
+- `-H`でヘッダーを表します
+	- ステップ2-2-7で作成したAPIキーを、 `-H "X-Api-Key: {api_key}"`という形式で記述します。下記「APIキーの確認方法」に沿って確認してください
 
-- `-d`でデータを表します。2-2-4でLambdaのテストを行った時のデータを参考に、実際に存在するバケット名やファイル名に置き換えてください
+- `-d`でデータを表します。ここでは、パイプ経由で渡された値を表す `-@`を指定します
 
 **APIのエンドポイントの確認方法**
 
-AWSのコンソールで、ステップ2-3-6でデプロイしたAPIのステージを選択し、さらにリソースを選択すると、「URLの呼び出し」でAPIのリソースパスが表示されます。
+AWSのコンソールで、ステップ2-2-6でデプロイしたAPIのステージを選択し、さらにリソースを選択すると、「URLの呼び出し」でAPIのリソースパスが表示されます。
 
 ![2-4-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_7%E6%9E%9A%E7%9B%AE.png)
 
 **APIキーの確認方法**
 
-AWSのコンソールで、ステップ2-3-7で作成したAPIキーを[表示]します。
+AWSのコンソールで、ステップ2-2-7で作成したAPIキーを[表示]します。
 
 ![2-4-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_9%E6%9E%9A%E7%9B%AE.png)
 
 - 変数の入力が終わったら、ファイルを更新し、実行します
 
-- 現在コマンドラインがいるディレクトリ内から、shellファイルが存在するディレクトリを正しく指定するよう注意ください。タブキーでの引数の自動補完を活用しましょう
-
+- 現在コマンドラインがいるディレクトリを鑑みて、shellファイルが存在するディレクトリを正しく指定するようご注意ください。タブキーでの引数の自動補完を活用しましょう
 
 ```shell:実行コマンド例
 sh curl_test_rekognition_sample.sh
@@ -502,9 +508,7 @@ sh curl_test_rekognition_sample.sh
 - コマンドを実行すると、Lambda側で実装したレスポンスが返ってきます。
 
 ```shell:実行結果
-curl -X POST "https://xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/prod/search" \
--H "X-Api-Key: xxxxxxxxxxxxxxxx" -H "Content-Type: application/json"　\
--d "{\"file_name\":\"image01_20190808181200.jpg\",\"bucket_name\":\"yamada-target-images-bucket\",\"threshold\":60}"
+sh curl_test_rekognition_sample.sh
 {"msg": "[SUCCEEDED]Rekognition done", "payloads": {"timestamp": "2019-08-19 00:40:17", 
 "SearchedFaceBoundingBox": {"Width": 0.24594193696975708, "Height": 0.45506250858306885, 
 "Left": 0.21459317207336426, "Top": 0.1758822500705719}, "SearchedFaceConfidence": 99.99996185302734, 
@@ -517,9 +521,11 @@ curl -X POST "https://xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com/prod/s
 "RetryAttempts": 0}}}
 ```
 
-## 2-4. デバイスからプログラムでWeb APIを利用する
+<!-- ここから要修正！スマホからAPIにアクセスする -->
 
-### 2-4-1. 顔認証を行うWeb APIにアクセスするプログラムを作成する
+## 2-3. デバイスからプログラムでWeb APIを利用する
+
+### 2-3-1. 顔認証を行うWeb APIにアクセスするプログラムを作成する
 
 最後に、前のステップで作成したAPIのリソースに対して、POSTメソッドでアクセスするPythonプログラムを作成します。
 
@@ -586,7 +592,7 @@ Pythonプログラムの第2引数を `file_name`の、第3引数を `bucket_nam
 	プログラム実行結果をコマンドラインで確認できるように、 `print()`メソッドで出力しましょう。
 	try文を用いるなどして、成否それぞれの場合の出力を実装してみましょう。
 
-### 2-4-3. Pythonプログラムを実行する
+### 2-3-2. Pythonプログラムを実行する
 
 前のステップで作成したPythonファイルに引数を渡して実行します。
 Pythonプログラム実行後の出力を確認します。
@@ -606,7 +612,8 @@ $ python3 execute_authentication_api.py image01_20190809094710.jpg yamada-target
 "RetryAttempts": 0}}}
 ```
 
-### 2-4-4. ステップ1で作成したプログラムからcallさせる
+### 2-3-3. ステップ1で作成したプログラムからcallさせる
+
 単体で実行に成功したあとは、`1-6. ステップ2, ステップ3で実装するプログラムをcallするコードを追記する`でコメントアウトして追記した部分のコメントアウトを外し、ステップ1で実装したコードを実行してください。
 これにより、デバイスから画像を投稿→顔認証の流れを検証することができます。
 
