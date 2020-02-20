@@ -28,18 +28,6 @@ class RecognizeFaces():
           self.required_keys = REQUIRED_KEYS
           self.optional_keys = OPTIONAL_KEYS
 
-     # def convert_to_float(self, data) -> float:
-     #      """
-     #      受け取ったオブジェクトをFloat型にする
-     #      """
-     #      return float(data)
-     
-     # def round_to_2nd_decimal(self, data) -> float:
-     #      """
-     #      受け取った数値を小数点第三位で四捨五入する
-     #      """
-     #      return round(data, 2)
-
      def make_timestamp(self) -> str: 
           """
           タイムスタンプを作成する
