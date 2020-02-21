@@ -182,16 +182,23 @@ Lambdaが実行するPythonコードを作成します。
 - API Gatewayに投げ込まれたデータは、 `lambda_handler`の引数となっている `event`の中に `body`として渡されます
 	- `body`はJSON形式で渡されますので、Pythonで処理できる形にするために `json.loads`メソッドを利用しましょう
 	- 今回、APIが呼ばれる際のパラメーターとして、以下のデータを受け取ることを想定して実装します
-		- `image_base64`：認証を行いたい顔画像ファイル(pngもしくはjpeg)をbase64でエンコードしたデータ(文字列型)
-		- `threshold`：Rekognition実行時、コレクションに登録している顔との一致度合いがいくら以上の時に結果を返すか、という閾値(%)(数値型)。オプション項目なので、設定しない場合はRekognitionが持つデフォルト値の80%が自動的にセットされる
+		- `image_base64str`：認証を行いたい顔画像ファイル(pngもしくはjpeg)をbase64でエンコードしたデータ(文字列型)
+		- `threshold`：Rekognition実行時、コレクションに登録している顔との一致度合いがいくら以上の時に結果を返すか、という閾値(%)(数値型)。オプション項目なので、設定しない場合はRekognitionが持つデフォルト値の80%が自動的にセットされます
 
+- base64のメソッド `b64decode`を使用し、base64でエンコードされたデータをバイナリデータに変換する
+  - APIが受け取ったデータ `image_base64str`の形式のままでは、下で説明するRekognitionへのアクセスに利用できません
+  - 画像データをbase64フォーマットに変換すると、ツールによってはHTMLに埋め込む際などに便利な"data URI scheme"に沿った形式で出力されます（例： `data:image/png;base64,{base64のデータ}`。こちらの記述はRekognitionに渡す必要がないので、カンマ部分より前に何かあれば取り出す処理を行います
+
+```python:lambda_function.py
+  # 画像データから不要な値を抜き出す(コンマがない場合は不要な値がないとし、全文字列を利用)
+  image_base64str = image_base64str[image_base64str.find(',') + 1 :]
+  return base64.b64decode(image_base64str)
+```
 - boto3 client `rekognition`のメソッド `search_faces_by_image`を使用する
 	- 引数として、APIから受け取るデータの他に対象のコレクションIDの指定が必要です。
 	- こちらのドキュメントを参考に、実装してください：
 		- https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rekognition.html#Rekognition.Client.search_faces_by_image
 	- `Image`パラメーター内の `'Bytes'`は、画像のバイナリデータを指定します
-    <!-- 今回のRekognitionへのアクセス方法では、直接イメージのバイトデータを投げることも可能ですが、 ...-->
-	- `'S3Object'`項目内の `'Version'` は、S3バケットのバージョンを意味します。今回は必要ありません
 	- `MaxFaces`は、指定した画像から検出する顔の最大数を指定します
   - `FaceMatchThreshold`は、一致と判断する閾値(%)を指定します
 
@@ -247,7 +254,7 @@ Lambdaの関数コードを保存したら、API Gatewayから渡されてくる
   - イベント名：任意の名前（例：AuthTest）
   - テストデータ：以下のjsonファイルの内容。画像のデータや閾値を適宜変更してください。
 
-- テストデータは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/lambda_event_sample.json)の `lambda_event_sample.json`をご確認ください。
+- テストデータは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/lambda_authentication_event_example.json)の `lambda_authentication_event_example.json`をご確認ください。
 
 - テストデータの内容をコピーし、テストイベントのコード欄に貼り付けてください
 
@@ -458,20 +465,16 @@ URLの書き方でファイルの送受信が行えるオープンソースの�
 
 今回、画像データが大きく、コマンドラインへの直接入力に向かないため、下記のshellファイルをコマンドラインから実行します。
 
-- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/curl_test_rekognition_sample.sh)の `curl_test_rekognition_sample.sh`をご確認ください。
+- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/curl_test_authentication_format.sh)の `curl_test_authentication_format.sh`をご確認ください。
 
 - 下記の解説に従い、shellファイルの中身を確認・編集してください。
 
 #### curlコマンドの解説
 
-上記のshellファイルの中身を確認しながら、適宜修正してください。
-
-<!-- TODO: ここから追記・修正 -->
-
 **echoコマンドについて**
 
 - 画像データが大きいため、`echo`コマンドを利用してAPIのリクエストボディに含めたいデータを出力します
-- `echo`の引数である文字列内の`threshold`や `image_base64`の値を書き換え、APIに投げ込むデータを適宜変更してください
+- `echo`の引数である文字列内の`threshold`や `image_base64str`の値を書き換え、APIに投げ込むデータを適宜変更してください
 - パイプ（ `|`）はデータの受け渡しを行います。今回の場合、 `echo`が出力したデータを次のコマンド、つまり `curl`に渡します
 
 **curlコマンドについて**
@@ -497,18 +500,18 @@ AWSのコンソールで、ステップ2-2-7で作成したAPIキーを[表示]�
 
 ![2-4-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_9%E6%9E%9A%E7%9B%AE.png)
 
-- 変数の入力が終わったら、ファイルを更新し、実行します
+- 変数の入力が終わったら、ファイルを保存し、実行します
 
 - 現在コマンドラインがいるディレクトリを鑑みて、shellファイルが存在するディレクトリを正しく指定するようご注意ください。タブキーでの引数の自動補完を活用しましょう
 
 ```shell:実行コマンド例
-sh curl_test_rekognition_sample.sh
+sh curl_authentication_test_format.sh
 ```
 
 - コマンドを実行すると、Lambda側で実装したレスポンスが返ってきます。
 
 ```shell:実行結果
-sh curl_test_rekognition_sample.sh
+sh curl_authentication_test_format.sh
 {"msg": "[SUCCEEDED]Rekognition done", "payloads": {"timestamp": "2019-08-19 00:40:17", 
 "SearchedFaceBoundingBox": {"Width": 0.24594193696975708, "Height": 0.45506250858306885, 
 "Left": 0.21459317207336426, "Top": 0.1758822500705719}, "SearchedFaceConfidence": 99.99996185302734, 
@@ -527,72 +530,136 @@ sh curl_test_rekognition_sample.sh
 
 ### 2-3-1. 顔認証を行うWeb APIにアクセスするプログラムを作成する
 
-最後に、前のステップで作成したAPIのリソースに対して、POSTメソッドでアクセスするPythonプログラムを作成します。
+最後に、ステップ0で作成したWebアプリケーションから、前のステップで作成したAPIのリソースにアクセスするVue.jsのプログラムを作成します。今回利用しているWebアプリケーションは、設定画面にユーザーが入力した値を元にAPIにアクセスするため、コード自体の修正は不要です。ここでは、コードを適宜引用しながら、APIにアクセスしている部分の解説のみを行います。
 
-Pythonプログラムの書き方は、ステップ1-4-2を参考にしてください。
-
-今回は、コマンド引数として
-
-- 第1引数：pythonファイル（例: `execute_authentication_api.py`）
-- 第2引数：ステップ1-1で作成したS3にアップロードした画像ファイル名（例: `image01_20190809094710.jpg`）
-- 第3引数：ステップ1-1で作成したS3のバケット名（例: `yamada-target-images-bucket`）
-- 第4引数：Rekognition実行時、コレクションに登録している顔との一致度合いがいくら以上の時に結果を返すか、という閾値（%）
-
-を指定することで動作するプログラムを作成します。
-
-```shell:実行コマンド例
-$ python3 execute_authentication_api.py image01_20190809094710.jpg yamada-target-images-bucket 80
-```
-
-- サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-zybo-and-aws/blob/master/step2/execute_authentication_api.py)の `execute_authentication_api.py`をご参考ください。
-
-- サンプルプログラムの内容をコピーし、関数コード欄にペーストし、コード内の以下の部分を変更してください
-    - 18行目「`API_KEY =  'xxxxxxxxxxxxxxxxxxx'`」 → 2-3-8「APIキーの確認方法」を参照
-    - 20行目「`STAGE = 'xxxxxx'`」 → 2-3-6で作成したAPIをデプロイしたステージ名（例：prod）
-    - 22行目「`API_ID = 'xxxxxx'`」 → 2-3-8「APIのエンドポイントの確認方法で確認したエンドポイントのうち「`.execute-api.api-northeast-1.~`」の前の英数字部分
-    - 24行目「`RESOURCE = 'xxxxxx'`」 → 2-3-2で作成したAPIのリソース名（例：search）
-
-```python:変更例
-# APIキーの指定
-API_KEY =  'ABCDEFGHIJK12345'
-# APIのステージ
-STAGE = 'prod'
-# APIのID
-API_ID = 'abcde123'
-# APIのリソースパス
-RESOURCE = 'search'
-BASE_URL = 'https://{api_id}.execute-api.ap-northeast-1.amazonaws.com/{stage}/{resource}'
-```
+- Webアプリケーションのリポジトリを開き、以下のファイルを開いてください
+  - `/handson_image_recognition_web/src/components/SearchFaces.vue`
 
 #### 作成プログラムの解説
 
-- import一覧（例）
+<!-- TODO: 全て行数確認 -->
 
+##### `<template></template>`タグ内の要素について
+
+- templateタグ内には、画面に表示する要素をHTMLで記述します
+- コードの26行目のformタグ( `v-text-field`)内にある「`v-model="apiEndpoint"`」および27行目の「 `v-model="apiKey"`」の `v-model`は、このフォームに入力された値をそれぞれ " `apiEndpoint`(APIのエンドポイントの変数)" " `apiKey`(APIキーの変数)"プロパティとしてリアルタイムに反映・保持します
+- コードの30行目のselectタグ( `v-select`)内でも、 `v-model`を利用し" `threshold`(閾値)"の値を保持します。選択可能な要素は、 `:items="[10,20,30,40,50,60,70,80,90,100]"`で指定しています
+- コードの46行目のinputタグ( `v-file-input`)内にある「 `@change="onFileChange"`」は、ここに要素が入力されたことをトリガーに実行したい関数を表しています
+- コードの82行目のbuttonタグ( `v-btn`)内にある「 `@click="execRecognition"`」は、ボタンクリック時に実行したい関数を表しています
+
+##### `<script></script>`タグ内の要素について
+
+- 必要なライブラリのimport定義をします
+
+```javascript:SearchFaces.vue
+  import axios from 'axios'; // APIエンドポイントにアクセスするのに利用します"
 ```
-import sys               # pythonコマンド実行時に指定された引数を取得するのに利用します
-import json              # JSONフォーマットのデータを扱うために利用します
-import urllib.request    # RestAPIへのアクセスを行える簡易なライブラリです
-```
 
-- `urllib.request`モジュールを利用してRestAPIにアクセスする
-	- 追加のモジュールのインストールが不要なPythonの標準ライブラリです。こちらのドキュメントを参考に実装してください：
-	- https://docs.python.org/ja/3/library/urllib.request.html
-	- より具体的な書き方については、上述の実際のプログラム例（ `execute_authentication_api.py`）をご参考ください。
+- APIへのアクセスに必要なパラメータを準備する
+  - リクエストヘッダー情報
 
-- リクエストヘッダー情報
 APIキーを、`'x-api-key': 'xxxxxxxxxxxxxxxxxxxxxxxx'`という形式で、ヘッダー情報に組み込みます。
 また、やり取りするデータ形式を指定するため `'Content-type': 'application/json'`も入れましょう。
+`this.apiKey`で、このコンポーネントが持つ`apiKey`プロパティの値を取得できます。ここでは、コードの27行目で画面から入力された値が最新値として代入されます。
 
-- リクエストボディ情報
-ステップ2-2-3.で作成したLambda関数コードが想定しているデータの値を用意します。
-Pythonプログラムの第2引数を `file_name`の、第3引数を `bucket_name`の、そして第4引数を `threshold`のデータ値としそれぞれセットします。
-最後に、リクエストボディのデータを `json.dumps`メソッドでJSON形式に変換しましょう。
+```javascript:SearchFaces.vue
+// コンポーネント内で利用する変数の初期値を設定する
+data: () => ({
+  // --他のデータ定義は省略--
+  apiKey: '', 
+}),
 
-- 実行結果を `print()`する
-	プログラム実行結果をコマンドラインで確認できるように、 `print()`メソッドで出力しましょう。
-	try文を用いるなどして、成否それぞれの場合の出力を実装してみましょう。
+// ヘッダー情報を作成する
+const config = {headers: {
+  'Content-Type': 'application/json',
+  'x-api-key': this.apiKey,
+}};
+```
 
-### 2-3-2. Pythonプログラムを実行する
+  - リクエストボディ情報
+
+ステップ2-1-3で作成したLambda関数コードが想定しているデータの値を用意します。
+`base64data`には、 `createImage()`関数内の `FileReader`メソッドの実行結果として画像ファイルのbase64データ（data URI scheme形式）を利用します。
+`threshold`では、`this.threshold`で、コードの30行目で画面で選択された値を最新値として利用します。
+
+```javascript:SearchFaces.vue
+// コンポーネント内で利用する変数の初期値を設定する
+data: () => ({
+  // --他のデータ定義は省略--
+  base64data: '',
+  // デフォルト値として初期値に80を設定
+  threshold: 80,
+}),
+
+// リクエストボディ情報を作成する
+const querydata = {
+  'image_base64str': this.base64data,
+  'threshold': this.threshold,
+};
+
+// 入力されたファイルをFileReaderでbase64(data URI scheme)にエンコードする
+createImage(file) {
+  const reader = new FileReader();
+  
+  reader.onload = e => {
+    // ここにファイルの読み込み処理(readAsDataURL())実行後の処理を記述
+    // 以下は画面表示のための要素に利用します
+    this.uploadedImage = e.target.result;
+    // 以下をAPIアクセスに利用します
+    this.base64data = e.target.result;
+  };
+  // data URI scheme形式でファイルを読み込む
+  reader.readAsDataURL(file);
+},
+```
+
+- APIにアクセスする
+
+最後に、`axios`を利用してリクエストを投げます。
+`apiEndpoint`では、`this.apiEndpoint`で、コードの26行目で画面に入力された値を最新値として利用します。
+リクエストボディのデータは `JSON.stringify()`メソッドでJSON形式に変換しましょう。
+
+```javascript:SearchFaces.vue
+// コンポーネント内で利用する変数の初期値を設定する
+data: () => ({
+  // --他のデータ定義は省略--
+  info: '',
+  apiEndpoint: '',
+}),
+
+axios
+// APIエンドポイント、リクエストボディ、ヘッダーを引数にPOSTします
+.post(this.apiEndpoint, JSON.stringify(querydata), config)
+// APIアクセス成功時の処理です
+.then(response => {
+    // response.dataでレスポンスボディにアクセスします
+    this.info = response.data;
+    // ステップ2-1-3で作成した `payloads`内にあるRekognitionの結果データを取得します
+    const faceMatches = this.info.payloads.FaceMatches;
+    if (faceMatches.length == 0) {
+      // 該当する人物がない場合に実行する処理を記述します
+    } else {
+      // 該当する人物がいた場合に実行する処理を記述します
+    }
+})
+// エラーハンドリングを実装します
+.catch(error => {
+  // Lambdaからのエラーにはレスポンスデータがあるので、エラーメッセージを取得します
+  if ('response' in error) {
+    this.errorMessage = error.response.data.msg;
+  } else {
+    // API実行エラーやネットワークエラーの場合、errorにプロパティがありません
+    this.errorMessage = error;
+  }
+});
+```
+
+- 実行結果を `console.log()`する
+  プログラム実行結果をブラウザのデベロッパーツールのコンソールで確認できる様に`console.log()`メソッドで出力しましょう。デベロッパーツールは、Chromeの場合、「画面右上の設定ボタン > その他のツール > デベロッパーツール」で開くことができます。
+
+<!-- ここから作業する -->
+
+### 2-3-2. スマホ画面から顔認証を実行する
 
 前のステップで作成したPythonファイルに引数を渡して実行します。
 Pythonプログラム実行後の出力を確認します。
@@ -609,35 +676,5 @@ $ python3 execute_authentication_api.py image01_20190809094710.jpg yamada-target
 "FaceModelVersion": "4.0", "ResponseMetadata": {"RequestId": "xxxxx-xxxx-xxxx-xxxx-xxxxxxxx", "HTTPStatusCode": 200, 
 "HTTPHeaders": {"content-type": "application/x-amz-json-1.1", "date": "Mon, 19 Aug 2019 00:27:49 GMT", 
 "x-amzn-requestid": "xxxxx-xxxx-xxxx-xxxx-xxxxxx", "content-length": "537", "connection": "keep-alive"}, 
-"RetryAttempts": 0}}}
-```
-
-### 2-3-3. ステップ1で作成したプログラムからcallさせる
-
-単体で実行に成功したあとは、`1-6. ステップ2, ステップ3で実装するプログラムをcallするコードを追記する`でコメントアウトして追記した部分のコメントアウトを外し、ステップ1で実装したコードを実行してください。
-これにより、デバイスから画像を投稿→顔認証の流れを検証することができます。
-
-```python:upload_target_image.pyの26行目と90行目のコメントを解除
-# ステップ2で構築するプログラムのパス
-EXECUTE_AUTHENTICATION_PATH = '../step2/execute_authentication_api.py'
-
-・・・（中略）・・・
-
-# ステップ2で構築するプログラムをcallする
-subprocess.call(["python3", EXECUTE_AUTHENTICATION_PATH, relation_s3.filename, args[2], '60'])
-```
-
-```shell:画像アップロードから画像認証まで続けて実施
-$ python3 upload_target_image.py picture/image01.jpg yamada-target-images-bucket
-[succeeded!] upload file name: image01_20190819094015.jpg
-{"msg": "[SUCCEEDED]Rekognition done", "payloads": {"timestamp": "2019-08-19 00:40:17", 
-"SearchedFaceBoundingBox": {"Width": 0.24594193696975708, "Height": 0.45506250858306885, 
-"Left": 0.21459317207336426, "Top": 0.1758822500705719}, "SearchedFaceConfidence": 99.99996185302734, 
-"FaceMatches": [{"Similarity": 97.72643280029297, "Face": {"FaceId": "xxxxxx-xxxx-xxxx-xxxx-xxxxxx", 
-"BoundingBox": {"Width": 0.40926501154899597, "Height": 0.44643399119377136, "Left": 0.2812440097332001, 
-"Top": 0.12307199835777283}, "ImageId": "xxxxxxx-xxxx-xxxx-xxxx-xxxxxx", "ExternalImageId": "Taro_Yamada", 
-"Confidence": 100.0}}], "FaceModelVersion": "4.0", "ResponseMetadata": {"RequestId": "xxxxx-xxxx-xxxx-xxxx-xxxxxx", 
-"HTTPStatusCode": 200, "HTTPHeaders": {"content-type": "application/x-amz-json-1.1", "date": "Mon, 19 Aug 2019 00:40:16 GMT", 
-"x-amzn-requestid": "xxxxxx-xxxx-xxxx-xxxx-xxxxxx", "content-length": "537", "connection": "keep-alive"}, 
 "RetryAttempts": 0}}}
 ```
