@@ -524,8 +524,6 @@ sh curl_authentication_test_format.sh
 "RetryAttempts": 0}}}
 ```
 
-<!-- ここから要修正！スマホからAPIにアクセスする -->
-
 ## 2-3. デバイスからプログラムでWeb APIを利用する
 
 ### 2-3-1. 顔認証を行うWeb APIにアクセスするプログラムを作成する
@@ -556,7 +554,8 @@ sh curl_authentication_test_format.sh
 ```
 
 - APIへのアクセスに必要なパラメータを準備する
-  - リクエストヘッダー情報
+
+**リクエストヘッダー情報**
 
 APIキーを、`'x-api-key': 'xxxxxxxxxxxxxxxxxxxxxxxx'`という形式で、ヘッダー情報に組み込みます。
 また、やり取りするデータ形式を指定するため `'Content-type': 'application/json'`も入れましょう。
@@ -576,7 +575,7 @@ const config = {headers: {
 }};
 ```
 
-  - リクエストボディ情報
+**リクエストボディ情報**
 
 ステップ2-1-3で作成したLambda関数コードが想定しているデータの値を用意します。
 `base64data`には、 `createImage()`関数内の `FileReader`メソッドの実行結果として画像ファイルのbase64データ（data URI scheme形式）を利用します。
@@ -657,24 +656,23 @@ axios
 - 実行結果を `console.log()`する
   プログラム実行結果をブラウザのデベロッパーツールのコンソールで確認できる様に`console.log()`メソッドで出力しましょう。デベロッパーツールは、Chromeの場合、「画面右上の設定ボタン > その他のツール > デベロッパーツール」で開くことができます。
 
-<!-- ここから作業する -->
 
 ### 2-3-2. スマホ画面から顔認証を実行する
 
-前のステップで作成したPythonファイルに引数を渡して実行します。
-Pythonプログラム実行後の出力を確認します。
+前のステップで解説したWebアプリケーションに引数を渡して実行します。
+
+- 右上のボタンをクリックし、設定項目を入力する
+
+APIエンドポイントとAPIキーを入力します。しきい値は、デフォルトの80%から変更する場合にボックスから選択してください。最後に[保存]ボタンをクリックします。
+
+- [画像ファイルを選択]をクリックし、顔認証を行いたい画像を選択する
+
+画像はJPEG形式もしくはPNG形式のものを選択してください。画像のプレビューが表示されたら、[人物認識実行]をクリックします。
+
+- 実行結果を確認する
+
+画像内に、Rekognitionのコレクションに登録した人物が発見された場合、マッチした人物と信頼度が表示されます。見つからなかった場合、「認識結果」のボックスに「人物を特定できませんでした」と表示されます。
+
 また、AWSのコンソールに移動し、CloudWatchでAPIへのアクセス履歴やLambdaのログを確認しましょう。
 
-```python:実行結果
-$ python3 execute_authentication_api.py image01_20190809094710.jpg yamada-target-images-bucket 80
-{"msg": "[SUCCEEDED]Rekognition done", "payloads": {"timestamp": "2019-08-19 00:27:50", "SearchedFaceBoundingBox": 
-{"Width": 0.24594193696975708, "Height": 0.45506250858306885, "Left": 0.21459317207336426, "Top": 0.1758822500705719}, 
-"SearchedFaceConfidence": 99.99996185302734, "FaceMatches": [{"Similarity": 97.72643280029297, 
-"Face": {"FaceId": "xxxxx-xxxx-xxxx-xxxx-xxxxxx", "BoundingBox": {"Width": 0.40926501154899597, 
-"Height": 0.44643399119377136, "Left": 0.2812440097332001, "Top": 0.12307199835777283}, 
-"ImageId": "xxxxx-xxxx-xxxx-xxxx-xxxxxxxx", "ExternalImageId": "Taro_Yamada", "Confidence": 100.0}}], 
-"FaceModelVersion": "4.0", "ResponseMetadata": {"RequestId": "xxxxx-xxxx-xxxx-xxxx-xxxxxxxx", "HTTPStatusCode": 200, 
-"HTTPHeaders": {"content-type": "application/x-amz-json-1.1", "date": "Mon, 19 Aug 2019 00:27:49 GMT", 
-"x-amzn-requestid": "xxxxx-xxxx-xxxx-xxxx-xxxxxx", "content-length": "537", "connection": "keep-alive"}, 
-"RetryAttempts": 0}}}
-```
+
