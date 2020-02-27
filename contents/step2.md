@@ -4,7 +4,7 @@
 
 # ステップ2. 顔認証のWeb APIを作成する
 
-![ステップ2アーキテクチャ図](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/architecture_step2.png)
+![ステップ2アーキテクチャ図](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/architecture_step2.png)
 
 ステップ2では、前ステップでS3バケットにアップロードされた画像を分析し、「事前登録済みの人物が写っているか、写っている場合は誰かを判定する」機能を持ったWeb APIを作成し、デバイス側からAPIを呼び出す仕組みを構築します。
 
