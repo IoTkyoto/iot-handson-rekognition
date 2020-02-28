@@ -66,11 +66,30 @@ AWSコマンドラインインターフェースの略で、AWSサービスを�
 
 ### ＜AWS Amplify Consoleとは？＞
 
-ああああ
-ああああ
+AWS Amplify Consoleは、静的WEBサイトあるいはシングルページアプリケーション(SPA)を公開する環境を簡単に作成出来るサービスです。
+AWSマネジメントコンソールから設定と操作を行うだけで簡単に公開出来ます。
+また、GitHubやCodeCommitなどのリポジトリに接続することで、特定ブランチが更新されると自動的にビルドを行いデプロイを行わせることも可能となり、継続的なアプリケーションのアップデートを行うCI/CD環境を簡単に構築することが出来ます。
 
-- あ
-- a
+- スケーラブルでグローバルなホスティング環境を提供
+  - Amazon CloudFront グローバルエッジネットワークを活用
+- 対応するアプリケーション
+  - 静的サイト(HTML/JavaScript/CSS)
+  - SPAフロントエンドのフレームワーク(React、Angular、Vue.js、Ionic、Emberなど)
+  - 静的サイトジェネレータ(Gatsby,Eleventy,Hugo,VuePress,Jekyllなど)
+  シングルページアプリケーション
+- 多様なデプロイ元ソースに対応
+  - Gitプロバイダー
+    - GitHub,BitBucket.GitLab,AWS CodeCommit
+  - Gitプロバイダー以外
+    - ブラウザへのドラッグ&ドロップ
+    - S3にアップロードしたZIPファイル
+    - 外部URL
+- 機能ブランチ単位での環境構築
+- HTTPSアクセスを標準提供、カスタムドメイン設定も可能
+- ユーザ名・パスワードによる限定アクセス設定も可能
+- ビルド & デプロイ、ホスティングという 2 つの機能に対して[料金](https://aws.amazon.com/jp/amplify/console/pricing/)が発生
+  - ビルド & デプロイ 0.01USD/ビルド分
+  - ホスティングサービス 1 GB あたり0.15USD
 
 より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/amplify/console/)をご確認ください。
 
@@ -128,158 +147,130 @@ AWSコンソールにログインし、AWS Cloud9の環境を構築します。
 
 ### 0-2-2. Githubからファイル一式をCloneする
 
+- ターミナルで以下のコマンドを実行し、Githubからソースコードを取得する
 
+```sh
+$ git clone XXXXXX
+```
 
+- ダウンロードしたソースコードに移動する
+
+```sh
+$ cd XXXXXX
+```
 
 ### 0-2-3. アプリケーションのProductionビルドを行う
 
+- ターミナルで以下のコマンドを実行し、必要なライブラリファイルをインストールする
+
+```sh
+$ npm install
+```
+
+※ 処理が終わるまで少し時間がかかります
+
+- ソースコードから静的ファイル(HTML/JavaScript/CSS)を生成する
+
+```sh
+$ npm run build
+```
+
 ### 0-2-4. 静的リソースディレクトリを圧縮する
+
+- 静的リソースディレクトリに移動する
+
+```sh
+$ cd dist
+```
+
+- フォルダ内のファイル一式をZIP形式で圧縮する
+
+```sh
+$ zip -r archive.zip *  
+```
+
+### 0-2-5. デプロイファイルを格納するためのS3バケットを作成する
+
+- 圧縮したファイルをAWS環境に格納させるためのS3バケットを作成します
+- バケット名は任意の名前にしてください（例：yamada-reko-handson-deployment）
+
+```sh
+$ aws s3 mb s3://yamada-reko-handson-deployment
+make_bucket: yamada-reko-handson-deployment
+```
+
+- 以下のコマンドを実行しS3バケットの一覧にバケットが追加されていることを確認します
+
+```sh
+$ aws s3 ls
+```
 
 ### 0-2-5. S3にファイルをアップロードする
 
+- 圧縮したZipファイルをS3バケットにアップロードします
+
+```sh
+$ aws s3 cp archive.zip s3://yamada-reko-handson-deployment/
+```
 
 ## 0-3. Amplify Consoleでデプロイを行う
 
-### 0-3-1. Amplify Consoleサービスに移動する
+### 0-3-1. Amplifyサービスに移動する
 
-### 0-3-2. アプリケーション設定を行う
+- 画面上部の「サービス」をクリックしてください
+- 検索窓に「ampl」と入力し、候補から「AWS Amplify」を選択してください
+![0-3-1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-1.png)
 
-### 0-3-3. デプロイを実施する
+### 0-3-2. アプリケーションの作成を行う
 
-### 0-3-4. ブラウザでアクセスする
+- 画面左のメニューをクリックし「すべてのアプリ」をクリックしてください
+![0-3-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-2_1.png)
 
+- 「アプリの作成」をクリックしてください
+![0-3-2_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-2_2.png)
 
+### 0-3-3. アプリケーションの設定を行う
 
-### 0-1-5. aaa
+- 「Deploy without Git provider」（Gitプロバイダー以外でのデプロイ）を選択し「Continue」をクリックしてください
+![0-3-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-3_1.png)
 
+- 以下の情報を入力し「Save and deploy」をクリックしてください
+  - App name（アプリケーション名）
+    - 任意（例：yamada_rekognition_handson）
+  - Environment name（環境名）
+    - 任意（例：prod）
+  - Method（デプロイ方法）
+    - Amazon S3
+  - Bucket（デプロイ対象S3バケット）
+    - ステップ0-2-5で作成したデプロイファイル配置用のS3バケット名
+    - yamada-reko-handson-deployment
+  - Zip file（デプロイ対象ZIPファイル）
+    - ステップ0-2-4で作成した圧縮ファイルのファイル名
+    - archive.zip
+![0-3-3_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-3_2.png)
+![0-3-3_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-3_3.png)
+    
 
+### 0-3-4. デプロイを実施する
 
+- 処理が進行し「success」が表示されればデプロイが完了です
+![0-3-4](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-4.png)
 
+### 0-3-5. ブラウザでアクセスする
 
-## スマートフォンでハンズオン用デモサイトを開く
+- Domai部分に表示されているURLをクリックしてください
+![0-3-5_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-5_1.png)
 
-- スマートフォンをインターネットに接続できる状態にしてください
-- ブラウザアプリを起動し、デモアプリのURLを開いてください
-- 認証プロンプトが開きますので以下の認証情報を入力してください
-- 以下の設定画面が表示されれば問題有りません
+- 以下のようなページが表示されれば成功です
+![0-3-5_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step0/0-3-5_2.png)
 
-## デバイスに必要なモジュールを確認・インストールする
+### 0-3-6. スマートフォンでハンズオン用アプリを開く
 
-今回のハンズオンを進めるにあたって、デバイス側では以下のモジュールが必要です。
+- スマートフォンをインターネットに接続できる状態にし、ブラウザを起動し、ステップ0−3−5でアクセスしたアプリのURLを開いてください
+- 以下のようなサイトでURLをQRコード化すると簡単にアクセスすることが出来ます
+https://qr.quel.jp/
 
-- Python (v3.0以上)
-- pip　(Python3用)
-- AWS SDK for Python(boto3) (v1.9以上)
-- AWS CLI (v1.16以上)
-- vim
+### 次のステップへ進んでください
 
-### Python
-
-Python言語の特徴は、インデント記述により簡潔で見やすいコードや、誰が書いても似たような表記になるシンプルなプログラミング記法、また豊富なモジュールの存在です。
-
-今回のハンズオンではPythonバージョン3を利用しますので、以下の手順に従い、Python3が使用可能か確認してください。
-
-```shell:バージョン確認コマンド
-$ python3 --version
-```
-Pythonはこの後のAWS CLIのインストールにも必要です。
-AWS CLIのインストールに対応しているPythonのバージョンは[こちら](https://docs.aws.amazon.com/ja_jp/cli/latest/userguide/cli-chap-install.html)をご確認ください。
-Pythonバージョン3が入っていない場合や、AWS CLIに対応していないPythonバージョンの場合は、下記サイトを参考に、Pythonバージョン3をインストールしてください。
-https://www.python.jp/install/ubuntu/index.html
-
-*この際、OSのアップデートが必要となる可能性もございますのでご注意ください。*
-
-### pip
-
-pipとは、Pythonで書かれたパッケージソフトウェアをインストールしたりする際に利用するパッケージ管理システムです。
-
-デフォルトで設定されているPythonのバージョンが2である場合、Pythonバージョン3に対応したpipが入っていない可能性がありますので、以下のコマンドで確認してください。
-
-```shell:バージョン確認コマンド
-$ sudo pip3 --version
-```
-
-実行後、`command not found`（「コマンドがない」）と表示された場合、Pythonバージョン3に対応したpipをインストールする必要があります。
-
-```shell:インストール方法
-$ sudo apt-get install python3-pip
-```
-
-インストール後、pip3コマンドが通ることを確認します。
-
-```shell:バージョン確認コマンド
-$ sudo pip3 --version
-```
-
-*注意：ここでインストールしたpipを実行する際のコマンドは `pip3`となります。*
-
-
-### AWS SDK for Python(boto3)
-	
-boto3とは、AWSサービスをPythonプログラムから操作するためのSDKのライブラリです。
-先ほどインストールしたpip3でインストールすることで、python3コマンド実行時に使用可能となります。
-		
-まず、boto3がインストールされているかを確認してください。
-
-```shell:インストール確認コマンド
-$ sudo pip3 list | grep boto3
-```
-
-実行結果の出力がない場合は、以下に従い`boto3`をインストールしてください。
-
-```shell:インストールコマンド
-$ sudo pip3 install boto3
-```
-
-インストール後、再度listコマンドでインストールされていることを確認してください。
-
-```shell:インストール確認コマンド
-$ sudo pip3 list | grep boto3
-```
-
-### AWS CLI
-
-AWS CLIは、コマンドを利用してAWSのサービスとやり取りすることができるオープンソースツールです。
-パッケージ名は `awscli`です。
-こちらも上記boto3と同様の方法で、インストールされているかを確認します。
-
-```shell:インストール確認コマンド
-$ sudo pip3 list | grep awscli
-```
-
-実行結果の出力がない場合は、以下に従い`awscli`をインストールしてください。
-
-```shell:インストールコマンド
-$ sudo pip3 install awscli
-```
-
-インストール後、再度listコマンドでインストールされていることを確認してください。
-
-```shell:インストール確認コマンド
-$ sudo pip3 list | grep awscli
-```
-
-
-#### vimの使用方法について
-
-vimの使用方法が分からない場合は、リンク先の[記事](https://qiita.com/Ichiro_Tsuji/items/e7ff30f0ec0b7d0ceed5#vim%E3%81%A7%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%E3%82%92%E7%B7%A8%E9%9B%86%E3%81%99%E3%82%8B)に従い、練習問題まで実施してみてください。
-
-
-## ローカルPCに必要なモジュールを確認・インストールする
-
-今回のハンズオンを進めるにあたって、PC側では以下のモジュールが必要です。
-
-- Python
-- AWS CLI
-
-ステップ２で、ローカルPCから`AWS CLI`を使用したAWS Rekognitionの[コレクションの作成](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/create-collection-procedure.html)を行う必要があります。
-ローカルPCにAWS CLIがインストールされていない場合は、[こちらのサイト](https://docs.aws.amazon.com/ja_jp/cli/latest/userguide/cli-chap-install.html)の手順に従いインストールを行ってください。
-
-AWS CLIのインストールには特定のバージョンのPythonが必要ですので、[こちら](https://docs.aws.amazon.com/ja_jp/cli/latest/userguide/cli-chap-install.html)をご参考にPythonの有無やバージョンを確認してください。
-Pythonが入っていない場合、下記のURLからローカルPCのOSに対応したPythonをインストールしてください。
-https://www.python.org/downloads/
-
-**注意1：Pythonプログラムの実行環境の準備について**
-今後の手順においてPythonプログラムを作成します。
-こちらのプログラムをローカルPCでもテスト実行する場合は、デバイスにインストールされたPython3と同じバージョンのPythonをインストールすることが望ましいです。
-また、Pythonプログラムの実行に必要となるboto3などモジュールや、これらをインストールするためのpip3が必要となります。「デバイスに必要なモジュールを確認・インストールする」をご参考にインストールしてください。
+- ここまでの作業で事前の準備作業は終了です
+- トップページに戻って次のステップに進んでください
