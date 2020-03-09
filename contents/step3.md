@@ -134,7 +134,14 @@ import base64                     # base64フォーマットの画像データ�
 sh curl_analysis_test_format.sh
 
 {"msg": "[SUCCEEDED]Analysis done", "payloads": {"timestamp": "2019-08-19 01:40:17", 
-"analysis": [{"BoundingBox": {"Width": 0.3842945396900177, "Height": 0.4907236397266388, "Left": 0.34415897727012634, "Top": 0.28372901678085327}, "AgeRange": {"Low": 21, "High": 33}, "Smile": {"Value": false, "Confidence": 58.52912521362305}, "Eyeglasses": {"Value": false, "Confidence": 99.91854858398438}, "Sunglasses": {"Value": false, "Confidence": 99.9820556640625}, "Gender": {"Value": "Male", "Confidence": 98.9040298461914}, "Beard": {"Value": false, "Confidence": 93.08826446533203}, "Mustache": {"Value": false, "Confidence": 99.42503356933594}, "EyesOpen": {"Value": true, "Confidence": 95.3335952758789}, "MouthOpen": {"Value": false, "Confidence": 98.8746109008789}, "Emotions": [{"Type": "SURPRISED", "Confidence": 0.25857076048851013}, {"Type": "CONFUSED", "Confidence": 0.36431387066841125}, {"Type": "FEAR", "Confidence": 0.09700098633766174}, {"Type": "DISGUSTED", "Confidence": 0.9556394815444946}, {"Type": "HAPPY", "Confidence": 41.95534133911133}, {"Type": "SAD", "Confidence": 0.3965829014778137}, {"Type": "ANGRY", "Confidence": 0.30273476243019104}, {"Type": "CALM", "Confidence": 55.66981887817383}],
+"analysis": [{"BoundingBox": {"Width": 0.3842945396900177, "Height": 0.4907236397266388, "Left": 0.34415897727012634, 
+"Top": 0.28372901678085327}, "AgeRange": {"Low": 21, "High": 33}, "Smile": {"Value": false, "Confidence": 58.52912521362305}, 
+"Eyeglasses": {"Value": false, "Confidence": 99.91854858398438}, "Sunglasses": {"Value": false, "Confidence": 99.9820556640625}, 
+"Gender": {"Value": "Male", "Confidence": 98.9040298461914}, "Beard": {"Value": false, "Confidence": 93.08826446533203}, 
+"Mustache": {"Value": false, "Confidence": 99.42503356933594}, "EyesOpen": {"Value": true, "Confidence": 95.3335952758789}, 
+"MouthOpen": {"Value": false, "Confidence": 98.8746109008789}, "Emotions": [{"Type": "SURPRISED", "Confidence": 0.25857076048851013}, 
+{"Type": "CONFUSED", "Confidence": 0.36431387066841125}, {"Type": "FEAR", "Confidence": 0.09700098633766174}, {"Type": "DISGUSTED", "Confidence": 0.9556394815444946}, 
+{"Type": "HAPPY", "Confidence": 41.95534133911133}, {"Type": "SAD", "Confidence": 0.3965829014778137}, {"Type": "ANGRY", "Confidence": 0.30273476243019104}, 
 ・・・（省略）・・・
 ```
 
