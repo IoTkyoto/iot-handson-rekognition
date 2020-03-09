@@ -6,7 +6,7 @@
 
 ![ステップ2アーキテクチャ図](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/architecture_step2.png)
 
-ステップ2では、前ステップでS3バケットにアップロードされた画像を分析し、「事前登録済みの人物が写っているか、写っている場合は誰かを判定する」機能を持ったWeb APIを作成し、デバイス側からAPIを呼び出す仕組みを構築します。
+ステップ2では、アップロードされた画像を分析し、「事前登録済みの人物が写っているか、写っている場合は誰かを判定する」機能を持ったWeb APIを作成し、デバイス側からAPIを呼び出す仕組みを構築します。
 
 まずは、「**[Amazon Rekognition（以下、Rekognition）](https://aws.amazon.com/jp/rekognition/)**」を利用して「コレクション」を作成し、認識対象となる顔を登録します。
 次に、作成したコレクションを使って顔の認識を行う「**[AWS Lambda（以下、Lambda）](https://aws.amazon.com/jp/lambda/)**」を作成します。
@@ -172,11 +172,12 @@ Lambdaが実行するPythonコードを作成します。
     - 必要なライブラリをimportしてください
 
 ```python:lambda_function.py
-  import json                       # JSONフォーマットのデータを扱うために利用します
-  import boto3                      # AWSをPythonから操作するためのSDKのライブラリです
-  from datetime import datetime     # この関数を動かした（＝顔の認証を行なった）時間をtimestampとして作成するのに利用します
-  import botocore.exceptions  # boto3の実行時に発生する例外クラスです
-  import base64 # base64フォーマットの画像データをRekognitionが認識できる形に変換するのに利用します
+  import json                      # JSONフォーマットのデータを扱うために利用します
+  import boto3                     # AWSをPythonから操作するためのSDKのライブラリです
+  from typing import Union, Tuple  # 変数や引数・返り値などの型定義に利用します
+  from datetime import datetime    # この関数を動かした（＝顔の認証を行なった）時間をtimestampとして作成するのに利用します
+  import botocore.exceptions       # boto3の実行時に発生する例外クラスです
+  import base64                    # base64フォーマットの画像データをRekognitionが認識できる形に変換するのに利用します
 ```
 
 - API Gatewayに投げ込まれたデータは、 `lambda_handler`の引数となっている `event`の中に `body`として渡されます
@@ -194,6 +195,7 @@ Lambdaが実行するPythonコードを作成します。
   image_base64str = image_base64str[image_base64str.find(',') + 1 :]
   return base64.b64decode(image_base64str)
 ```
+
 - boto3 client `rekognition`のメソッド `search_faces_by_image`を使用する
 	- 引数として、APIから受け取るデータの他に対象のコレクションIDの指定が必要です。
 	- こちらのドキュメントを参考に、実装してください：
