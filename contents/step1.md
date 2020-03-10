@@ -23,7 +23,6 @@ AWSのCLI(コマンド・ライン・インターフェース)ツールを使っ
 ### 概要
 
 - AWSコンソールからS3のバケットを作成し画像をアップロードする
-- AWS CLI用のユーザーを作成する
 - AWS CLIでRekognitionのコレクションを作成し画像を登録する
 
 ---
@@ -210,233 +209,17 @@ S3バケットのパブリックアクセスが原因となった顧客情報の
 
 - アップロードに成功した場合、画像ファイルがバケット内にリストで表示される
 
-
-### 1-3. CLI操作用のユーザポリシーを作成する
-
-現時点(2019/12/01時点)では、AWSのコンソール画面からRekognitionのコレクションは作成できないため、ローカルPCからAWS CLIを使用してコレクションを作成する必要があります。
-
-お手元のパソコンでAWS CLIを利用するためには、必要な権限（**[ポリシー](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/access_policies.html)**）を与えた「**[IAMユーザー](https://aws.amazon.com/jp/iam/)**」を作成する必要があります。
-CLIからアクセスできるAWSサービス・処理内容・バケットを制限することでアクセス権限を最小限にし、セキュリティレベルを高めます。
-
-まずは、今回の作業に必要な最低限の権限（**[ポリシー](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/access_policies.html)**）として、以下の２種類の権限を持たせたポリシーを作成します。
-
-- Step1-1で作成したS3バケットからオブジェクトを取得する
-- Rekognitionでコレクションを扱う
-
-*※ ローカルPCのAWS CLIにAdmin権限を付与済みであれば、当対応は不要です。*
-
----
-
-### ＜IAMとは？＞
-AWS Identity and Access Management (IAM) は、AWSのサービスやリソースへのアクセスを安全に管理するためのサービスです。
-IAMを使用することで、AWSのユーザーとグループを作成および管理し、アクセス権を使用して AWSリソースへのアクセスを許可および拒否できます。
-権限管理は非常に重要な部分ですので[IAMのベストプラクティス](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/best-practices.html)をご確認いただく事を推奨します。
-
-より詳しく知りたい場合は[公式サイト](https://aws.amazon.com/jp/iam/)をご確認ください。
-
-### <Policyとは？>
-AWSのIAMサービスでは、各AWSサービスへの操作をアクセス制御するために「ポリシー」という概念があります。 
-ポリシーは、「誰が」「どのAWSサービスの」「どのリソースに対して」「どんな操作を」「許可する(許可しない)」、といったことをJSON形式で記述したものです。
-作成したポリシーをユーザー（IAMユーザー、IAMグループ、IAMロール）や、AWSリソースに関連づけることで、アクセス制御を実現しています。
-
-より詳しく知りたい場合は[公式サイト](https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/access_policies.html)をご確認ください。
-
----
-
-### 1-3-1. AWSのコンソール画面で「IAM」を検索・選択し[ポリシー] -> [ポリシーの作成]をクリックする
-IAMのポリシーでアクセス権限を設定し、これをユーザーにアタッチすることでユーザーにアクセス権限が付与されます。
-
-- AWSサービス
-![1-3-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-1_1.png)
-![1-3-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-1_2.png)
-
-### 1-3-2. ビジュアルエディタでサービス・アクション・リソースを設定する
-
-ビジュアルエディタもしくはJSONでの記述により、アクセス権限をカスタムで作成できます。
-ここではビジュアルエディタでの設定方法に沿って説明します。
-
-#### 1-3-2-1. サービスを選択する
-
-まずは、どのAWSサービスに対して権限を設定するかを選択します。
-
-サービス欄の「`サービスの選択`」をクリックします。
-![1-3-2-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-1_1.png)
-
-サービスの検索ボックスに「`S3`」と入力して、下に表示されたサービスの候補から「`S3`」をクリックします。
-![1-3-2-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-1_2.png)
-
-#### 1-3-2-2. アクションを選択する
-
-選択したS3サービスのどのアクションに権限を設定するかを選択します。
-
-アクセスレベル欄の「`読み込み`」の「▶︎」をクリックし、「`GetObject`」にチェックを付けます。
-![1-3-2-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-2_1.png)
-
-#### 1-3-2-3. リソースを選択する
-
-選択したS3サービスのPutObjectアクションに対してリソースの制限を設けます。
-
-リソース欄の「▶︎」をクリックし、「`指定`」にチェックを付け、object欄の「`ARNの追加`」をクリックします。
-![1-3-2-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-3_1.png)
-
-ARNの追加ポップアップ画面に以下の情報を入力し「`追加`」をクリックします。
-- Bucket name
-    - Step1-1で作成したS3バケット名
-    （例：yamada-rekognition-collection-source）
-- Object name
-    - 「`すべて`」にチェック付与
-
-![1-3-2-3_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-3_2.png)
-
-**【参考】 ARNとは**
-[ARN](https://docs.aws.amazon.com/ja_jp/general/latest/gr/aws-arns-and-namespaces.html)とは *Amazon Resource Name* の略で、AWSのサービスやサービス内で作成したリソースを一意に識別するための特殊な表記のことです。
-ARNの表記方法はAWSサービスごとに異なります。
-S3の「オブジェクト」とは、S3バケット内のすべてのアイテムを指します。
-また
-
-
-#### 1-3-2-4. S3用のポリシー設定内容を確認する
-
-S3サービスに対するポリシーの内容が以下の画面通りとなっていることを確認し、「`さらにアクセス許可を追加する`」をクリックします。
-![1-3-2-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-4_1.png)
-
-#### 1-3-2-5. Rekognitionでコレクションを扱うためのポリシーを作成する
-
-今度は、1-3-2-1 ~ 1-3-2-3までの手順にしたがって、Rekognitionのサービスを利用するための権限を追加します。
-
-- サービス： `Rekognition`
-- アクション：
-	- [読み込み] `ListCollections`、 `ListFaces`、 `SearchFacesByImage
-`
-	- [書き込み] `CreateCollection`、 `IndexFaces`、 `DeleteCollection`、 `DeleteFaces`
-- リソース：すべてのリソース
-
-#### 1-3-2-6. Rekognition用のポリシー設定内容を確認する
-
-Rekognitionサービスに対するポリシーの内容が以下の画面通りとなっていることを確認し、「`ポリシーの確認`」をクリックします。
-![1-3-2-6_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-6_1.png)
-
-
-#### 1-3-2-7. ポリシーに名前をつけて[ポリシーの作成]をクリックする
-
-ポリシーの作成に必要な情報を入力・確認し、「`ポリシーの作成`」をクリックします。
-
-- 名前：任意の名称（例：yamada_local_rekognition_operation_policy）
-- 説明：任意（例：Policy for Rekognition collection operations for AWS CLI on local PC）
-- 概要：以下の画像の通りであること
-![1-3-2-7_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-7_1.png)
-
-**【参考】ポリシーをJSON形式で登録する**
-- 以下の画像のように、JSON形式でポリシーを直接記述して登録することも可能です。
-![1-3-2-7_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-3-2-7_2.png)
-
-## 1-4. CLI操作用のIAMユーザーを作成する
-
-AWS CLI用のIAMユーザーを作成し、ステップ1-3で作成したポリシーを関連付けします。
-
-### 1-4-1. ユーザーの追加を選択する
-
-IAM画面のサイドメニュー欄から「`ユーザー`」をクリックし、ユーザ一覧上部の「`ユーザーを追加`」をクリックする。
-
-![1-4-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-4-1_1.png)
-
-### 1-4-2. 作成するユーザーの情報を入力する
-
-以下の情報を入力し、「`次のステップ:アクセス権限`」をクリックします。
-- ユーザー名：任意の名称（例：device_user）
-- プログラムによるアクセス：チェック
-- AWSマネジメントコンソールへのアクセス：チェックなし
-![1-4-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-4-2_1.png)
-
-*このステップで作成するユーザはデバイスからAWS SDK経由のプログラムからアクセスするためのユーザとなりますので、AWSコンソールへのログインは不要としプログラムによるアクセスのみ有効としましょう。*
-
-### 1-4-3. ポリシーを関連づける
-
-設定するポリシーを指定し、「`次のステップ:タグ`」をクリックします。
-
-- アクセス許可の設定欄の「既存のポリシーを直接アタッチ」をクリック
-- ステップ1-3で作成したポリシーを検索しチェックを付与
-（例：yamada_local_rekognition_operation_policy）
-![1-4-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-4-3_1.png)
-
-### 1-4-4. タグを設定する
-
-今回のケースではタグを使用しないため、何も入力せずに「`次のステップ:確認`」をクリックします。
-![1-4-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-4-4_1.png)
-
-#### ＜タグとは？＞
-タグとは、AWSリソースを整理するためのメタデータとして使用されるキーと値のペア値のことです。
-タグを使用して[リソースグループ](https://docs.aws.amazon.com/ja_jp/ARG/latest/userguide/welcome.html)を作成すると、複数のリージョンやサービスをまたいでプロジェクト別にAWSリソースを視覚化できます。
-タグを使用してAWSの請求を整理して視覚化する方法については「[コスト配分タグの使用](https://docs.aws.amazon.com/ja_jp/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)」を参照してください。
-
-
-### 1-4-5. IAMユーザーの登録内容を確認する
-
-確認画面で表示されている内容に問題がなければ、「`ユーザーの作成`」をクリックします。
-![1-4-5_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-4-5_1.png)
-
-### 1-4-6. [.csvのダウンロード]をクリックする
-
-AWSにコマンドラインからアクセスするための認証（クレデンシャル）情報として、アクセスキーとシークレットアクセスキーが生成されます。
-次のステップで利用しますのでダウンロードしておきましょう。
-![1-4-6_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step1/1-4-6_1.png)
-
-## 1-5. AWS CLIに認証情報を登録する
-
-作成した認証(クレデンシャル)情報を、ローカルPCのAWS CLIに登録します。
-
-### 1-5-1. AWS Configureを登録する
-
-ローカルPCのコマンドラインから、認証情報を設定してください。
-（Windowsの場合はコマンドプロンプト、Macの場合はターミナルを使用）
-AWS CLIは `aws`コマンドで動作しますので、以下のコマンドを実行してください。
-
-```shell:認証情報の設定
-$ aws configure
-```
-
-その後、 アクセスキー、シークレットアクセスキー、デフォルトリージョン、デフォルト出力フォーマットの順に情報を入力してください。
-
-- 【アクセスキー】 `AWS Access Key ID :` 
-1−4−6でダウンロードしたCSVファイルのAccessKeyを設定してください
-- 【シークレットキー】 `AWS Secret Access Key :`
-1−4−6でダウンロードしたCSVファイルのSecretKeyを設定してください
-- 【デフォルトリージョン】 `Default region name :`
-東京リージョンを意味する「 `ap-northeast-1`」を設定してください
-- 【デフォルト出力フォーマット】 `Default output format :`
-`json`を設定してください
-
-**【注意】 デフォルトの登録について**
-この時、デフォルトリージョンや出力フォーマットを大文字で入力するなどのタイプミスをすると、この後のサービスへのアクセスがうまくできなかったり、コマンドラインへの出力がうまくされなくなります。
-上記の通りに入力するようご注意ください。
-
-### 1-5-2. 正しく接続出来ることを確認する
-
-AWS CLIに正しく認証情報が登録され、対象のAWS環境に接続出来ることを確認します。
-
-先ほどS3にバケットを作成しましたので、以下のコマンドでS3のバケット一覧を表示してみてください。
-
-```shell:S3バケット一覧の表示
-$ aws s3 list
-```
-
-正しく認証情報が登録出来ている場合は、以下のように1-1で作成したバケットが表示されます。
-
-```shell:S3バケット一覧
-$ 2019-11-01 11:12:34 yamada-rekognition-collection-source
-```
-
-
-## 1-6. コレクションを作成する
+## 1-3. コレクションを作成する
 
 顔認証サービスを利用するために、認証の対象となる顔データの登録先となるコレクションを作成します。
 コレクションには、 `--collection-id`パラメーターで名前をつける必要があります。
 使用目的が分かるようなコレクション名をつけましょう。
 （例：yamada-authentication-collection）
 
-### 1-6-1. コレクションを作成する
+### 1-3-1. コレクションを作成する
 
-- 以下のコマンドを実行しコレクションを作成してください
+- AWSコンソールからステップ0-2で作成したCloud9を開いてください
+- ターミナル上で以下のコマンドを実行しコレクションを作成してください
   コマンドの詳細は、公式ドキュメント「[コレクションの作成](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/create-collection-procedure.html)」をご確認ください。
 
 ```shell:実行コマンド例
@@ -455,7 +238,7 @@ $ aws rekognition create-collection --collection-id "yamada-authentication-colle
 }
 ```
 
-### 1-6-2. コレクションの作成を確認する
+### 1-3-2. コレクションの作成を確認する
 
 - `list-collections`コマンドを実行することで、対象のAWSアカウントで管理されているコレクションの一覧を確認することができます
 
@@ -463,19 +246,15 @@ $ aws rekognition create-collection --collection-id "yamada-authentication-colle
 $ aws rekognition list-collections
 {
     "CollectionIds": [
-        "authentication-collection",
-        "collection-handson",
         "yamada-authentication-collection"
     ],
     "FaceModelVersions": [
-        "4.0",
-        "4.0",
         "4.0"
     ]
 }
 ```
 
-## 1−7. コレクションに顔を登録する
+## 1−4. コレクションに顔を登録する
 
 前のステップで作成したコレクションに対して、以下のコマンドで対象の顔画像を登録します。
 
@@ -555,7 +334,7 @@ $aws rekognition list-faces --collection-id yamada-authentication-collection
 }
 ```
 
-## 1-8. コレクションをテストする
+## 1-5. コレクションをテストする
 
 ステップ1-1で作成したバケットとアップロードした画像を利用して、コレクションに登録した顔とマッチするかテストします。コレクションに登録した顔のデータと、そのデータの元となる画像を比較するため、マッチ率は100%に限りなく近い数値となります。
 
