@@ -151,13 +151,21 @@ AWSコンソールにログインし、AWS Cloud9の環境を構築します。
 - ターミナルで以下のコマンドを実行し、Githubからソースコードを取得する
 
 ```sh
-$ git clone XXXXXX
+$ git clone https://github.com/IoTkyoto/iot-handson-rekognition
+
+Cloning into 'iot-handson-rekognition'...
+remote: Enumerating objects: 369, done.
+remote: Counting objects: 100% (369/369), done.
+remote: Compressing objects: 100% (324/324), done.
+remote: Total 369 (delta 131), reused 210 (delta 29), pack-reused 0
+Receiving objects: 100% (369/369), 21.30 MiB | 2.04 MiB/s, done.
+Resolving deltas: 100% (131/131), done.
 ```
 
-- ダウンロードしたソースコードに移動する
+- ダウンロードしたリポジトリのWebアプリケーションのディレクトリに移動する
 
 ```sh
-$ cd XXXXXX
+$ cd iot-handson-rekognition/webapp/
 ```
 
 ### 0-2-3. アプリケーションのProductionビルドを行う

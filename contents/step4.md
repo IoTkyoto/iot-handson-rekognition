@@ -151,7 +151,7 @@ https://docs.aws.amazon.com/ja_jp/iot/latest/developerguide/iot-rule-actions.htm
 
 ### 4-2-1. アクションを追加する
 
-- WSのコンソール画面で**IoT Core**を検索・選択し、左側メニューの[ACT]をクリックしてください
+- AWSのコンソール画面で**IoT Core**を検索・選択し、左側メニューの[ACT]をクリックしてください
 
 - ルール一覧画面の右上の[作成]をクリックしてください
 ![4-2-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-2-1_1.png)
@@ -373,9 +373,9 @@ Buffer intervalを60秒にすると、60秒間データを溜め続けた後にS
 
 ## 4-5. デバイスからIoT Coreにデータをパブリッシュする
 
-デバイスから顔画像分析結果ログデータをトピックに送信する処理を行います。
+デバイス(スマホのWebアプリケーション)から顔画像分析結果ログデータをトピックに送信する処理を行います。
 
-今回の通信方式は、IoTでよく使われているMQTT通信ではなく、HTTP通信で行います。
+今回の通信方式は、IoTでよく使われているMQTT通信ではなく、AWS SDKを使ったHTTP通信で行います。
 MQTT通信を使用する場合は、クラウド側で証明書を発行し、デバイス側のストレージに保管しSDKから証明書を指定させる必要があります。
 
 AWSとMQTT通信でデータの送受信を試してみたい場合は、弊社の別の[IoTハンズオン記事](https://iot.kyoto/integration_case/2019/04/13/3739/)をお試しください。
@@ -407,32 +407,17 @@ QOS0あるいはQOS1を使用してください。
 ### 4-5-1. ログデータをIoT Coreのトピックにパブリッシュするプログラムを作成する
 
 ログデータをIoT CoreのトピックにpublishするJavaScriptプログラムをコーディングします。
-今回は、プログラム部分については事前に準備済みですのでコードの解説を行います。
+今回は、Webアプリケーションとしてプログラムは事前に準備済みですのでコードの解説のみを行います。
 
 以下にプログラムに最低限必要な要素を挙げています。
 注意点もありますのでご確認ください。
 
-サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-zybo-and-aws/tree/master/step4)にあります。
-各 `pub_xxx_log_data.py`の `xxx`が対応するログデータとなっているものをご使用ください。
-
-| スクリプト名 | 説明 | パラメータ |
-| ---|---|---|
-| pub_analysis_log_data.py | 顔分析結果ログデータ送信スクリプト | 送信対象データ(JSON形式) |
+Webアプリケーションのプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/webapp/src/components/AnalysisFaces.vue)になります。
+上記プログラム内の `execPublish` メソッドが Publish処理を行なっている箇所となります。
 
 #### 作成プログラムの解説
 
-- 使用するライブラリ
-    AWS SDK for JavaScript
-    ```JavaScript
-    npm install aws-sdk
-    ```
-
-- import一覧
-    ```JavaScript
-    import AWS from 'aws-sdk';
-    ```
-
-- AWS SDKの `IoTData`クラスの `publish`メソッドを使用する
+- JavaScriptプログラムからAWS IoT CoreにPublishするには、AWS SDKの `IoTData`クラスの `publish`メソッドを使用します
     - こちらのドキュメントを参考に実装してください：
         - https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/IotData.html
         - https://docs.aws.amazon.com/iot/latest/apireference/API_iotdata_Publish.html
@@ -441,47 +426,136 @@ QOS0あるいはQOS1を使用してください。
         - `qos`：既出の説明を参考に、 `0`・ `1`のいずれかの数値レベルを指定します
         - `payload`：トピックに送信したいデータを渡します
 
+- ライブラリ「AWS SDK for JavaScript」をインストールする
+    ```JavaScript
+    npm install aws-sdk
+    ```
+
+- AWS SDKを Import する
     ```JavaScript
     import AWS from 'aws-sdk';
-    var iotdata = new AWS.IotData({
-        endpoint: this.endpoint,
-        apiVersion: '2015-05-28'
+    ```
+
+- AWS SDKにCredential(認証)情報をセットする
+    ```JavaScript
+    // SDKで使用するAWS認証情報の更新
+    AWS.config.update({
+        credentials: new AWS.Credentials(
+            this.accessKeyID,
+            this.secretAccessKey
+        ),
+        region: this.region
     });
-    var params = {
-        topic: this.topicName, /* required */
-        payload: resultJsonData,
-        qos: '0'
-    };
-    iotdata.publish(params, function(err, data) {
-        if (err) console.log(err, err.stack); // an error occurred
-        else     console.log(data);           // successful response
+    ```
+- AWS SDKの `IoTData`クラスのインスタンス化を行う
+    ```JavaScript
+    // IoTDataクラスのインスタンス化
+    const iotdata = new AWS.IotData({
+        endpoint: iotEndpoint,
+        apiVersion: '2015-05-28'
     });
     ```
 
-### 4-5-2. デバイスに設定情報を登録する
+- AWS SDKの `IoTData`クラスの `publish`メソッドを使用する
+    ```JavaScript
+    // パラメータの設定
+    var params = {
+        topic: this.topicName,
+        payload: JSON.stringify(payload),
+        qos: '0'
+    };
+    // Publish実行
+    iotdata.publish(params, function(err, data) {
+        if (err) console.log(err, err.stack);
+        else     console.log(data);
+    });
+    ```
 
-アプリに設定を登録します。
+### 4-5-2. デバイスからIoT Coreへの接続設定情報を登録する
 
-- 「顔画像分析」画面を開きます
-- 「Publish設定」アイコンをクリックする
-- 以下の設定内容を設定する
-    - アクセスキーID：ステップ4-4-2でダウンロードしたCSVファイルの「Access key ID」の値
-    - シークレットアクセスキー：ステップ4-4-2でダウンロードしたCSVファイルの「Secret access key」の値
-    - リージョン：IoT Coreを構築したAWSリージョン名（例：東京の場合は「ap-northeast-1」）
-    - AWS IoTエンドポイント：構築したIoT Coreのエンドポイント
-    - トピック名：ルールで指定したトピック名（例：指示通り作成している場合は「handson/analysisLogData」）
-- 「保存」をクリックする
+デバイスからIoT Coreに接続するために必要な情報を設定します。
 
-#### ※ AWS IoT エンドポイントの確認方法
-- AWSコンソールで「IoT Core」の画面を開く
-- 左メニューの「設定」をクリックする
+Webアプリケーションの設定画面からも設定可能にしていますが、スマートフォンから設定情報を打ち込むのは大変なため、設定ファイルに設定情報を記載して、再ビルド・デプロイを行います。
+
+#### 4-5-2-1. Cloud9画面を開く
+
+- AWSコンソールからステップ0-2で作成したCloud9を開いてください
+
+#### 4-5-2-2. 対象ファイルを開く
+
+- 画面左のディレクトリツリーから以下のファイルを開きます
+`iot-handson-rekognition/webapp/src/mixins/ConfigMixin.js`
+![4-5-2-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-5-2-2_1.png)
+
+#### 4-5-2-3. 対象ファイルを編集し保存する
+
+- `ConfigMixin.js` の `analysisFacesUpload` 部分を以下の内容で更新します
+    - accessKeyID: ステップ4−4−2でダウンロードしたCSVファイルの「Access key ID」
+    - secretAccessKey: ステップ4−4−2でダウンロードしたCSVファイルの「Secret access key」
+    - iotCoreID: AWS IoT Coreの設定画面から取得（下記を参照）
+    - topicName: ステップ4-2-1で設定したトピック名
+    　（例）handson/analysisLogData
+![4-5-2-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-5-2-3_1.png)
+
+---
+
+**※ IoT Core エンドポイントの確認方法**
+- AWSコンソールで「IoT Core」サービスを開く
+- 画面左のメニューの下部にある「設定」をクリックする
+![4-5-2-3_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-5-2-3_2.png)
+- 設定画面のカスタムエンドポイントを確認する
+![4-5-2-3_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-5-2-3_3.png)
 - 設定画面のカスタムエンドポイントに表示されている「xxxxxxx-ats.xxxxxx.amazonaws.com」がエンドポイントとなります
+エンドポイントの「.iot.ap-northeast-1.amazonaws.com」の前の部分がIoT CoreのIDとなります
 ※ IoT Coreのエンドポイントはアカウントごとのリージョン単位に１つです
+
+---
+
+#### 4-5-2-4. アプリケーションの再ビルドを行う
+
+- Cloud9のターミナルで以下のコマンドを実行し、アプリケーションの再ビルドを行う
+```sh
+$ cd ~/environment/iot-handson-rekognition/webapp/
+$ npm run build
+```
+
+#### 4-5-2-5. 静的リソースディレクトリを圧縮する
+
+- 静的リソースディレクトリに移動する
+```sh
+$ cd dist
+```
+
+- フォルダ内のファイル一式をZIP形式で圧縮する
+```sh
+$ zip -r archive.zip *  
+```
+
+### 4-5-2-6. S3にファイルをアップロードする
+
+- 圧縮したZipファイルをS3バケットにアップロードします
+
+```sh
+$ aws s3 cp archive.zip s3://yamada-reko-handson-deployment/
+```
+
+### 4-5-2-7. AWS Amplifyで再デプロイを行う
+
+- AWSコンソールから「AWS Amplify」サービスを開く
+- ステップ0-3で作成したアプリケーションの画面を開く
+- 「choose another method」をクリックする
+![4-5-2-7_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-5-2-7_1.png)
+- Methodで「Amazon S3」を選択し、BucketとZip fileを選択し「Save and deploy」をクリックする
+![4-5-2-7_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-5-2-7_2.png)
+- 以上で、アプリケーションの再デプロイが完了です
+
 
 ### 4-5-3. デバイスから結果データをパブリッシュする
 
-アプリから実際に顔画像分析結果データを送信します。
-ステップ4−5−2の設定が正しく行われていれば、顔画像分析を実行した結果データをバックグラウンドで、IoT Coreの指定トピックにPublishしてくれます。
+スマートフォンでWebアプリケーションを立ち上げて「顔画像分析」ページを開いて「Publish設定完了」が表示されていることを確認してください。
+![4-5-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step4/4-5-3_1.png)
+
+ステップ4−5−2の設定が正しく行われていれば、顔画像分析を実行した結果データをバックグラウンドで、IoT Coreの指定トピックにPublishし、S3にファイルとして保存されます。
 
 ### 4-5-4. データが保存されていることを確認する
 
