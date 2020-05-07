@@ -340,7 +340,7 @@ APIメソッドを設定したら、バックエンドのエンドポイント�
   - デフォルトタイムアウトの使用：チェックを入れる
 ![2-3-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-4_1%E6%9E%9A%E7%9B%AE.png)
 
-- [保存]をクリックすると、当該APIリソースが上で指定したLambda関数にアクセスするためのIAM権限を自動で作成するか確認されるため[OK]をクリックする
+- [保存]をクリックすると、当該APIリソースが上で指定したLambda関数にアクセスするための権限を自動で作成するか確認されるため[OK]をクリックする
 ![2-3-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-4_2%E6%9E%9A%E7%9B%AE_1_.png)
 
 #### ＜Lambdaプロキシ統合とは？＞
