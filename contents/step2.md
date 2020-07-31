@@ -97,15 +97,15 @@ https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-a
 ### 2-1-1. Lambda関数を作成する
 
 - AWSのコンソール画面で、「Lambda」を検索・選択し、[関数の作成]をクリックします。
-![2-2-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-1_1%E6%9E%9A%E7%9B%AE.png)
+![2-1-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-1_1.png)
 
 - 以下の項目をそれぞれ選択・入力し、[関数の作成]をクリックします。
   - 一から作成
   - 関数名： 任意の名前（例：yamada_lambda_authentication）
-  - ランタイム： `Python 3.7`
+  - ランタイム： `Python 3.8`
   - アクセス権限：[ ▼ 実行ロールの選択または作成]を開き、**「基本的なLambdaアクセス権限で新しいロールを作成」** を選択する
-![2-2-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-1_2%E6%9E%9A%E7%9B%AE.png)
-![2-2-1_3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-1_3%E6%9E%9A%E7%9B%AE.png)
+![2-1-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-1_2.png)
+![2-1-1_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-1_3.png)
 
 「基本的なLambdaアクセス権限」を指定することで、Lambda実行時のログをCloudWatch Logsにアップロードするためのロールが自動的に付与されます。
 次のステップで、Lambdaのソースコードから使用するAWSサービスに対する必要な権限をカスタムで追加します。
@@ -116,9 +116,9 @@ https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-a
 - 関数が作成された関数の画面に遷移します。
 - 画面下部の実行ロール欄の「xxxxxxxxx-role-xxxxxxxxロールを表示」をクリックします。
 - このLambdaに紐づいたロール詳細画面が開きます。
-![2-2-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_1%E6%9E%9A%E7%9B%AE.png)
-![2-2-2_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_2%E6%9E%9A%E7%9B%AE.png)
-![2-2-2_3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_3%E6%9E%9A%E7%9B%AE.png)
+![2-1-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-2_1.png)
+![2-1-2_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-2_2.png)
+![2-1-2_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-2_3.png)
 
 - ロール詳細画面の「インラインポリシーの追加」をクリック
 - Rekognitionのコレクションへのアクセスができるように、以下の権限をインラインポリシーとして追加し、任意の名前で登録しましょう
@@ -133,8 +133,8 @@ https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-a
       - Collection Id：ステップ2-1-5で作成したコレクション名 (例： `yamada-authentication-collection`)
 
 
-![2-2-2_5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_0.png)
-![2-2-2_6](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-2_%E7%A2%BA%E8%AA%8D.png)
+![2-1-2_4](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-2_4.png)
+![2-1-2_5](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-2_5.png)
 
 
 ### 2-1-3. Pythonの関数コードを作成する
@@ -150,8 +150,7 @@ Lambdaが実行するPythonコードを作成します。
 
 - サンプルプログラムの内容をコピーし、関数コード欄にペーストしてください
 
-<!-- TODO: 行数確認 -->
-- コードの14行目の以下の部分の「`{collection_id}`」を、ステップ1-6-1で作成したコレクション名（例：`yamada-authentication-collection`）に変更してください
+- コードの15行目の以下の部分の「`{collection_id}`」を、ステップ1-3-1で作成したコレクション名（例：`yamada-authentication-collection`）に変更してください
 
 ```python:変更前
   # Rekognitionで作成したコレクション名を入れてください
@@ -163,7 +162,7 @@ Lambdaが実行するPythonコードを作成します。
 ```
 
 - 右上の「保存」をクリックしてください
-![2-2-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-3.png)
+![2-1-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-3_1.png)
 
 #### 作成プログラムの解説
 
@@ -247,7 +246,7 @@ try文を用いるなどして、Rekognitionへのアクセスの成否を反映
 Lambdaの関数コードを保存したら、API Gatewayから渡されてくる想定のイベントデータを用意し、Lambdaに渡して、実際の動きをテストしてみましょう。
 
 - 関数画面右上の[テスト]をクリックしてください。
-![2-2-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_1.png)
+![2-1-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-4_1.png)
 
 - テストイベントの設定画面で以下の内容を入力して「作成」をクリックしてください。
   - 新しいテストイベントの作成：チェック
@@ -259,14 +258,14 @@ Lambdaの関数コードを保存したら、API Gatewayから渡されてくる
 
 - テストデータの内容をコピーし、テストイベントのコード欄に貼り付けてください
 
-![2-2-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_2.png)
+![2-1-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-4_2.png)
 
 - 作成したら、[テスト]をクリックし、実行結果を確認しましょう。関数の実行結果は、中をスクロールして見ることが可能です
-![2-2-4_3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_3.png)
-![2-2-4_4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_4.png)
-![2-2-4_5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-2-4_5.png)
+![2-1-4_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-4_3.png)
+![2-1-4_4](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-4_4.png)
+![2-1-4_5](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-1-4_5.png)
 
-- テストの結果として、「statusCode:200」と「ExternalImageId」として対象者のタグが返ってきていれば成功です。
+- 今回テストとして送信した画像はコレクションに未登録の人物ですので、テストの結果として、「statusCode:200」と「FaceMatches」として空の配列が返ってきていれば成功です。
 
 ## 2-2. API Gatewayを作成する
 
@@ -276,14 +275,14 @@ Lambdaの関数コードを保存したら、API Gatewayから渡されてくる
 
 - AWSのコンソール画面で「API Gateway」を検索し、API Gatewayのコンソール画面を開きます。
 - [+APIの作成]をクリックします。
-![2-3-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-1_1%E6%9E%9A%E7%9B%AE.png)
+![2-2-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-1_1.png)
 
 - 以下の項目をそれぞれ入力し、[APIの作成]をクリックします。
     - プロトコルを選択する：`REST`
     - 新しいAPIの作成： **新しいAPI**
     - API名： 任意の名前（例：yamada-rekognition-api）
     - エンドポイントタイプ： **リージョン**
-![2-3-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-1_2%E6%9E%9A%E7%9B%AE.png)
+![2-2-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-1_2.png)
 
 ### 2-2-2. APIにリソースを追加する
 
@@ -293,14 +292,14 @@ APIにリソースを追加し、ステップ2-2で作成したLambdaを呼び�
 - 左メニューのAPI一覧で2-3-1で作成したAPIが選択されていることを確認する
 - 「リソース」を選択する
 - `/`が選択されている状態で「アクション」をクリックし「リソースの作成」を選択する
-![2-3-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-2_1%E6%9E%9A%E7%9B%AE.png)
+![2-2-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-2_1.png)
 
 - 新しい子リソース画面で以下の内容を入力し「リソースの作成」をクリックする
   - プロキシリソースとして設定する：チェックなし
   - リソース名：search
   - リソースパス：search
   - API Gateway CORSを有効にする：チェック
-![2-3-2_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-2_2%E6%9E%9A%E7%9B%AE_1_.png)
+![2-2-2_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-2_2.png)
 
 ---
 
@@ -322,7 +321,7 @@ APIにはHTTPメソッドが必要です。
 ステップ2-2-3で作成したLambda実行コードに必要なデータをAPI経由で渡す必要があるため、レスポンスボディが使用できる`POST`にします。
 
 - リソースで「`search`」が選択されている状態で「アクション」をクリックし「メソッドの作成」を選択する
-![2-3-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-3-1_.png)
+![2-2-3_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-3_1.png)
 
 - メソッド欄の「OPTIONS」の下にコンボボックスが表示されるため、「POST」を選択し☑️をクリックする
 
@@ -338,10 +337,10 @@ APIメソッドを設定したら、バックエンドのエンドポイント�
   - Lambda リージョン：`ap-northeast-1`
   - Lambda 関数：ステップ2-1-1で作成したLambda関数を入力（例：yamada_lambda_authentication）
   - デフォルトタイムアウトの使用：チェックを入れる
-![2-3-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-4_1%E6%9E%9A%E7%9B%AE.png)
+![2-2-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-4_1.png)
 
 - [保存]をクリックすると、当該APIリソースが上で指定したLambda関数にアクセスするための権限を自動で作成するか確認されるため[OK]をクリックする
-![2-3-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-4_2%E6%9E%9A%E7%9B%AE_1_.png)
+![2-2-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-4_2.png)
 
 #### ＜Lambdaプロキシ統合とは？＞
 
@@ -360,7 +359,7 @@ APIを公開すると、エンドポイントURLを知っている人は誰で�
 
 - 対象のメソッドを選択して「メソッドリクエスト」をクリックする
 - メソッドリクエスト画面の設定欄の「APIキーの必要性」を `true`に変更する
-![2-3-5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-5.png)
+![2-2-5_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-5_1.png)
 *OPTIONSメソッドの「APIキーの必要性」は `true`にする必要はありません。*
 
 #### ＜OPTIONSメソッドとは？＞
@@ -375,17 +374,17 @@ OPTIONSメソッドは、リソース作成時にCORSを有効にすることで
 作成したAPIをデプロイしてみましょう。
 
 - 対象APIのリソース「`/`」を選択した状態で、「アクション」をクリックし「APIのデプロイ」を選択する
-![2-3-6_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-6_1%E6%9E%9A%E7%9B%AE.png)
+![2-2-6_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-6_1.png)
 
 - 「デプロイされるステージ」で `[新しいステージ]`を選択する
 - 以下の項目を入力し「デプロイ」をクリックする
   - ステージ名：任意のステージ名（例：prod）
   - ステージの説明：任意
   - デプロイメントの説明：任意
-![2-3-6_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-6_2%E6%9E%9A%E7%9B%AE.png)
+![2-2-6_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-6_2.png)
 
 - prodステージエディターが表示されればデプロイは完了
-![2-3-6_4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_8%E6%9E%9A%E7%9B%AE.png)
+![2-2-6_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-6_3.png)
 
 ステージは、APIを公開後も安定してAPIのエンドポイントを供給しながら開発を行う上で必須の機能です。
 
@@ -427,51 +426,61 @@ APIキーは使用できる回数分だけ「トークンバケット」に補�
 
 
 - 関連付けられたAPIステージ画面で「APIのステージの追加」をクリックする
-![2-3-7_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_1%E6%9E%9A%E7%9B%AE.png)
+![2-2-7_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-7_1.png)
 
 - APIの選択ボックスで作成したAPI（例：`yamada-rekognition-api`）を選択する
 - ステージの選択ボックスで先ほどデプロイしたステージ（例：`prod`）を選択する
 - 右端の☑️をクリックする
-![2-3-7_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_2%E6%9E%9A%E7%9B%AE.png)
+![2-2-7_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-7_2.png)
 
 - 「次へ」をクリックする
-![2-3-7_3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_3%E6%9E%9A%E7%9B%AE.png)
+![2-2-7_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-7_3.png)
 
 
 - 「APIキーを作成して使用量プランに追加」をクリックする
-![2-3-7_4](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_4%E6%9E%9A%E7%9B%AE.png)
+![2-2-7_4](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-7_4.png)
 
 - APIキー画面で以下を入力し「保存」をクリックする
   - 名前：任意の名称（例：test-user）
   - APIキー：自動生成
   - 説明：任意
-![2-3-7_5](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_5%E6%9E%9A%E7%9B%AE.png)
+![2-2-7_5](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-7_5.png)
 
 - 「完了」をクリックする
-![2-3-7_6](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_6%E6%9E%9A%E7%9B%AE.png)
+![2-2-7_6](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-7_6.png)
 
 - これで、作成した使用量プランとデプロイしたAPIのステージ、そしてAPIキーが紐づきました。
   APIの使用量プランは、デプロイしたAPI Gatewayのステージと紐づきますので、ご注意ください。
 
 ### 2-2-8. cURLでAPIをテストする
 
-cURLの `curl`コマンドを利用して、前のステップで作成したAPIにアクセスしてみましょう。
+APIGAtewayが正常に稼働することを確認するために、cURLの `curl`コマンドを利用して、前のステップで作成したAPIにアクセスしてみましょう。
+
+今回のケースでは、画像のBase64形式データの文字数が多く、コマンドラインでの直接入力は大変なため、shellファイルを修正してコマンドラインから実行します。
+
+- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/curl_authentication_test_format.sh)の `curl_authentication_test_format.sh`をご確認ください。
 
 ---
 
 #### ＜cURLとは？＞
 
-URLの書き方でファイルの送受信が行えるオープンソースのコマンドラインツールです。WebサイトやAPIサーバーのポート疎通確認によく利用され、HTTP/HTTPSの他にも様々なプロトコルに対応しています。コマンドラインで `curl`コマンドとして利用します。
+URLの書き方でファイルの送受信が行えるオープンソースのコマンドラインツールです。
+WebサイトやAPIサーバーのポート疎通確認によく利用され、HTTP/HTTPSの他にも様々なプロトコルに対応しています。コマンドラインで `curl`コマンドとして利用します。
+
+#### ＜Base64とは？＞
+
+Base64とは、データを64種類の印字可能な英数字のみを用いて、それ以外の文字を扱うことの出来ない通信環境にてマルチバイト文字やバイナリデータを扱うためのエンコード方式です。
+具体的には、A–Z, a–z, 0–9 までの62文字と、記号2つ (+, /)、さらにパディング（余った部分を詰める）のための記号として = が用いられる。
 
 ---
 
-今回、画像データが大きく、コマンドラインへの直接入力に向かないため、下記のshellファイルをコマンドラインから実行します。
+### 2-2-8-1. Shellファイルを編集する
 
-- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/curl_test_authentication_format.sh)の `curl_test_authentication_format.sh`をご確認ください。
+- AWSコンソールからステップ0-2で作成したCloud9を開いてください
 
-- 下記の解説に従い、shellファイルの中身を確認・編集してください。
+- 画面左のディレクトリツリーから「iot-handson-rekognition/step2/curl_authentication_test_format.sh」をクリックして開いてください
 
-[TODO:どのように作成してもらうか、追記する必要？]
+- 下記の解説に従い、shellファイルの中身をvim等で確認・編集してください。
 
 #### curlコマンドの解説
 
@@ -497,13 +506,13 @@ URLの書き方でファイルの送受信が行えるオープンソースの�
 
 AWSのコンソールで、ステップ2-2-6でデプロイしたAPIのステージを選択し、さらにリソースを選択すると、「URLの呼び出し」でAPIのリソースパスが表示されます。
 
-![2-4-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_7%E6%9E%9A%E7%9B%AE.png)
+![2-2-8-1_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-8-1_1.png)
 
 **APIキーの確認方法**
 
 AWSのコンソールで、ステップ2-2-7で作成したAPIキーを[表示]します。
 
-![2-4-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step2/2-3-7_9%E6%9E%9A%E7%9B%AE.png)
+![2-2-8-1_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-2-8-1_2.png)
 
 - 変数の入力が終わったら、ファイルを保存し、実行します
 
@@ -533,84 +542,61 @@ sh curl_authentication_test_format.sh
 
 ### 2-3-1. 顔認証を行うWeb APIにアクセスするプログラムを作成する
 
-最後に、ステップ0で作成したWebアプリケーションから、前のステップで作成したAPIのリソースにアクセスするVue.jsのプログラムを作成します。Webアプリケーションのソースコードに、今回のAPIのエンドポイント情報を追記し、再度アプリケーションをデプロイします。
+最後に、ステップ0で作成したWebアプリケーションから、前のステップで作成したAPIのリソースにアクセスするVue.jsのプログラムを作成します。
 
-<!-- ここでは、コードを適宜引用しながら、APIにアクセスしている部分の解説のみを行います。 -->
+デプロイしたWebアプリケーションにはすでにAPIにアクセスするためのプログラムが組み込まれていますので、こちらの章ではコードを適宜引用しながら、APIにアクセスしている部分の解説を行います。
 
 - Webアプリケーションのリポジトリを開き、以下のファイルを開いてください
-  - `/handson_image_recognition_web/src/assets/api_settings.json`
+  - https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/webapp/src/components/SearchFaces.vue
 
-[TODO:ここも、どうやって開いてもらうのか追記する？]
+### APIアクセス用のプログラムの解説
 
-#### `api_settings.json`ファイルの解説
+#### `<template></template>`タグ内の要素について
 
-```json: api_settings.json
-{
-    // 以下のこちらの各項目を修正してください（参考：ステップ2-2-8で確認した内容）
-     "authentication": {
-          "apiId": "xxxxxxxxxx",
-          "stage": "prod",
-          "source": "authentication",
-          "apiKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-     },
-    // 以下はステップ3で利用する設定ですので、今は修正する必要はありません
-     "analysis": {
-          "apiId": "xxxxxxxxxx",
-          "stage": "prod",
-          "source": "analysis",
-          "apiKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-     }
-}
-```
-
-### 2-3-2. Webアプリケーションをデプロイする
-
-APIのエンドポイント情報が書き込めたら、アプリケーションを更新するため、再度Productionビルドを行い、静的ファイルを作成し、S3にアップロードします。
-
-- アプリケーションのProductionビルドを行う
-
-```
-$ 
-```
-
-[TODO:これ以降を最新のプログラムに合わせて修正]
-
-#### 作成プログラムの解説
-
-<!-- TODO: 全て行数確認 -->
-
-##### `<template></template>`タグ内の要素について
+- 画面のコンポーネントにはマテリアルデザインコンポーネントフレームワークの「[Vuetify](https://vuetifyjs.com/ja/)」を使用しています。
 
 - templateタグ内には、画面に表示する要素をHTMLで記述します
-- コードの26行目のformタグ( `v-text-field`)内にある「`v-model="apiEndpoint"`」および27行目の「 `v-model="apiKey"`」の `v-model`は、このフォームに入力された値をそれぞれ " `apiEndpoint`(APIのエンドポイントの変数)" " `apiKey`(APIキーの変数)"プロパティとしてリアルタイムに反映・保持します
-- コードの30行目のselectタグ( `v-select`)内でも、 `v-model`を利用し" `threshold`(閾値)"の値を保持します。選択可能な要素は、 `:items="[10,20,30,40,50,60,70,80,90,100]"`で指定しています
-- コードの46行目のinputタグ( `v-file-input`)内にある「 `@change="onFileChange"`」は、ここに要素が入力されたことをトリガーに実行したい関数を表しています
-- コードの82行目のbuttonタグ( `v-btn`)内にある「 `@click="execRecognition"`」は、ボタンクリック時に実行したい関数を表しています
 
-##### `<script></script>`タグ内の要素について
+- コードの2６行目〜２９行目のv-container内のテキストフィールドタグ( `v-text-field`)内にある「`v-model="xxxxx"`」の `v-model`は、このフィールドに入力された値をプロパティ値「`apiId`(APIのID)」「`region`(APIが稼働しているリージョン)」「`stage`(対象APIのステージ名)」「`resource`(対象APIのリソース名)」「`apiKey`(APIキー)」としてリアルタイムに反映・保持します。
 
-- 必要なライブラリのimport定義をします
+- コードの３０行目のselectタグ(`v-select`)内でも、 `v-model`を利用し「 `threshold`(閾値)」の値を保持します。
+選択可能な要素は、`:items="[10,20,30,40,50,60,70,80,90,100]"`で指定しています。
+
+- コードの４９行目のinputタグ( `v-file-input`)内にある「 `@change="onFileChange"`」は、ここに要素が入力されたことをトリガーに実行したい関数を表しています。
+
+- コードの８２行目のbuttonタグ( `v-btn`)内にある「 `@click="execRecognition"`」は、ボタンクリック時に実行したい関数を表しています。
+
+#### `<script></script>`タグ内の要素について
+
+- 必要なライブラリのimport定義をします。
+  - [axios](https://github.com/axios/axios)はブラウザとnode.js用のPromiseベースのHTTPクライアントとなります。
 
 ```javascript:SearchFaces.vue
-  import axios from 'axios'; // APIエンドポイントにアクセスするのに利用します"
+  import axios from 'axios';
 ```
 
-- APIへのアクセスに必要なパラメータを準備する
+##### APIへのアクセスに必要なパラメータを準備する
 
 **リクエストヘッダー情報**
 
 APIキーを、`'x-api-key': 'xxxxxxxxxxxxxxxxxxxxxxxx'`という形式で、ヘッダー情報に組み込みます。
+
 また、やり取りするデータ形式を指定するため `'Content-type': 'application/json'`も入れましょう。
-`this.apiKey`で、このコンポーネントが持つ`apiKey`プロパティの値を取得できます。ここでは、コードの27行目で画面から入力された値が最新値として代入されます。
+
+`this.apiKey`で、このコンポーネントが持つ`apiKey`プロパティの値を取得できます。ここでは、コードの３０行目で画面から入力された値が最新値として代入されます。
+
+this.apiKeyには画面生成時にCofigファイル(Mixins)の値を初期値として設定しています。https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/webapp/src/mixins/ConfigMixin.js
+
 
 ```javascript:SearchFaces.vue
-// コンポーネント内で利用する変数の初期値を設定する
-data: () => ({
-  // --他のデータ定義は省略--
-  apiKey: '', 
-}),
+// 画面作成時にコンポーネント内で利用する変数の初期値を設定する
+created() {
+  ・・・(省略)・・・
+  this.apiKey = this.config.searchConfig.apiKey
+  ・・・(省略)・・・
+},
 
-// ヘッダー情報を作成する
+// ヘッダー情報を設定する
 const config = {headers: {
   'Content-Type': 'application/json',
   'x-api-key': this.apiKey,
@@ -619,22 +605,22 @@ const config = {headers: {
 
 **リクエストボディ情報**
 
-ステップ2-1-3で作成したLambda関数コードが想定しているデータの値を用意します。
+ステップ2-1-3で作成したLambda関数コードが想定しているパラメータデータの値を用意します。
+
 `base64data`には、 `createImage()`関数内の `FileReader`メソッドの実行結果として画像ファイルのbase64データ（data URI scheme形式）を利用します。
-`threshold`では、`this.threshold`で、コードの30行目で画面で選択された値を最新値として利用します。
+
+`threshold`では、`this.threshold`で、コードの３１行目で画面で選択された値を最新値として利用します。
 
 ```javascript:SearchFaces.vue
 // コンポーネント内で利用する変数の初期値を設定する
-data: () => ({
-  // --他のデータ定義は省略--
-  base64data: '',
-  // デフォルト値として初期値に80を設定
-  threshold: 80,
-}),
+created() {
+  ・・・(省略)・・・
+  this.threshold = this.config.searchConfig.threshold
+},
 
 // リクエストボディ情報を作成する
 const querydata = {
-  'image_base64str': this.base64data,
+  'image_base64str': this.uploadedImage,
   'threshold': this.threshold,
 };
 
@@ -644,10 +630,8 @@ createImage(file) {
   
   reader.onload = e => {
     // ここにファイルの読み込み処理(readAsDataURL())実行後の処理を記述
-    // 以下は画面表示のための要素に利用します
+    // 以下は画面表示・APIアクセスに利用します
     this.uploadedImage = e.target.result;
-    // 以下をAPIアクセスに利用します
-    this.base64data = e.target.result;
   };
   // data URI scheme形式でファイルを読み込む
   reader.readAsDataURL(file);
@@ -657,7 +641,9 @@ createImage(file) {
 - APIにアクセスする
 
 最後に、`axios`を利用してリクエストを投げます。
+
 `apiEndpoint`では、`this.apiEndpoint`で、コードの26行目で画面に入力された値を最新値として利用します。
+
 リクエストボディのデータは `JSON.stringify()`メソッドでJSON形式に変換しましょう。
 
 ```javascript:SearchFaces.vue
@@ -668,52 +654,66 @@ data: () => ({
   apiEndpoint: '',
 }),
 
+// APIエンドポイントのURLを構築する
+const apiEndpoint = 
+  'https://' + this.apiId + '.execute-api.' + this.region + '.amazonaws.com/'  
+  + this.stage + '/' + this.resource
+
+// API呼び出し
 axios
-// APIエンドポイント、リクエストボディ、ヘッダーを引数にPOSTします
-.post(this.apiEndpoint, JSON.stringify(querydata), config)
-// APIアクセス成功時の処理です
-.then(response => {
-    // response.dataでレスポンスボディにアクセスします
-    this.info = response.data;
-    // ステップ2-1-3で作成した `payloads`内にあるRekognitionの結果データを取得します
-    const faceMatches = this.info.payloads.FaceMatches;
-    if (faceMatches.length == 0) {
-      // 該当する人物がない場合に実行する処理を記述します
-    } else {
-      // 該当する人物がいた場合に実行する処理を記述します
-    }
-})
-// エラーハンドリングを実装します
-.catch(error => {
-  // Lambdaからのエラーにはレスポンスデータがあるので、エラーメッセージを取得します
-  if ('response' in error) {
-    this.errorMessage = error.response.data.msg;
-  } else {
-    // API実行エラーやネットワークエラーの場合、errorにプロパティがありません
+  // APIエンドポイント、リクエストボディ、ヘッダーを引数にPOSTします
+  .post(apiEndpoint, JSON.stringify(querydata), config)
+  // APIアクセス成功時の処理です
+  .then(response => {
+      // ステップ2-1-3で作成した `payloads`内にあるRekognitionの結果データを取得します
+      const faceMatches = response.data.payloads.FaceMatches;
+      if (faceMatches.length == 0) {
+        // 該当する人物がない場合に実行する処理を記述します
+        this.noTarget = '人物を特定できませんでした'
+      } else {
+        // 該当する人物がいた場合に実行する処理を記述します
+        this.createAuthenticationData(faceMatches[0]);
+      }
+      this.overlay = false;
+  })
+  // エラーハンドリングを実装します
+  .catch(error => {
     this.errorMessage = error;
-  }
-});
+    this.overlay = false;
+  });
 ```
-
-- 実行結果を `console.log()`する
-  プログラム実行結果をブラウザのデベロッパーツールのコンソールで確認できる様に`console.log()`メソッドで出力しましょう。デベロッパーツールは、Chromeの場合、「画面右上の設定ボタン > その他のツール > デベロッパーツール」で開くことができます。
-
 
 ### 2-3-2. スマホ画面から顔認証を実行する
 
-前のステップで解説したWebアプリケーションに引数を渡して実行します。
+前のステップで解説したWebアプリケーションを実際に動かして顔認識処理を実行します。
 
 - 右上のボタンをクリックし、設定項目を入力する
+![2-3-2_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-3-2_1.png)
 
-APIエンドポイントとAPIキーを入力します。しきい値は、デフォルトの80%から変更する場合にボックスから選択してください。最後に[保存]ボタンをクリックします。
+- API ID、リージョン、ステージ名、リソース名、APIキー、しきい値を入力します。
+![2-3-2_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-3-2_2.png)
 
-- [画像ファイルを選択]をクリックし、顔認証を行いたい画像を選択する
+  - API IDは、API Gatewayのコンソール画面のAPI一覧に表示されている「ID」となります。
+![2-3-2_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-3-2_3.png)
 
-画像はJPEG形式もしくはPNG形式のものを選択してください。画像のプレビューが表示されたら、[人物認識実行]をクリックします。
+  - リージョン、ステージ名、リソース名は2-2で作成したAPIの情報を設定してください。
+
+  - APIキーには、2-2-7で作成したAPIキーを設定してください。
+![2-3-2_4](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-3-2_4.png)
+
+  - しきい値は、デフォルトの80%から変更する場合は選択ボックスから選択してください。
+  - 最後に[保存]ボタンをクリックします。
+
+- [画像ファイルを選択]をクリックし、スマホで写真を撮影するか、顔認証を行いたい画像を選択する
+![2-3-2_5](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-3-2_5.png)
+
+- 画像はJPEG形式もしくはPNG形式のものを選択してください。画像のプレビューが表示されたら、[人物認識実行]をクリックします。
+![2-3-2_6](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-3-2_6.png)
 
 - 実行結果を確認する
 
 画像内に、Rekognitionのコレクションに登録した人物が発見された場合、マッチした人物と信頼度が表示されます。見つからなかった場合、「認識結果」のボックスに「人物を特定できませんでした」と表示されます。
+![2-3-2_7](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step2/2-3-2_7.png)
 
 また、AWSのコンソールに移動し、CloudWatchでAPIへのアクセス履歴やLambdaのログを確認しましょう。
 

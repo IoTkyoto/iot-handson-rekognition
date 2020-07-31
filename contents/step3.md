@@ -66,7 +66,7 @@ Lambdaに必要な権限(Rekognitionに関する部分)が前回と異なりま�
 
 以下にコードの実装に最低限必要な要素を挙げています。後のステップに影響する実装もありますので、必ずご確認ください。
 
-- サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/lambda_analysis.py)の `lambda_analysis.py`をご確認ください。
+- サンプルプログラムは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step3/lambda_analysis.py)の `lambda_analysis.py`をご確認ください。
 
 - サンプルプログラムの内容をコピーし、関数コード欄にペーストしてください
 
@@ -111,7 +111,7 @@ import base64                     # base64フォーマットの画像データ�
 ### ステップ2-3-1で作成したAPI Gatewayに新たなリソースとメソッドを追加しましょう
 - `/` に対して新たに「リソースの作成」をしてください。（例：analyze）
 
-![3-3](https://s3.amazonaws.com/docs.iot.kyoto/img/iot-handson-zybo-and-aws/step3/3-3.png)
+![3-3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step3/3-3.png)
 
 - 今回作成したAPIリソースにも、`POST`メソッドを追加しましょう
 - また、こちらもAPIキーを必要とする設定にすることを忘れないようにしましょう
@@ -121,10 +121,10 @@ import base64                     # base64フォーマットの画像データ�
 
 - 最後に、ステップ2-2-8を参考に、cURLでAPIをテストしましょう。
 
-- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step2/curl_test_analysis_format.sh)の `curl_test_analysis_format.sh`をご確認ください。
+- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step3/curl_test_analysis_format.sh)の `curl_test_analysis_format.sh`をご確認ください。
 
 - 以下、ステップ2-2-8との相違点です
-  - APIのリソース名は、2-3-2で作成したAPIのリソース名（例：analysis）に変更しましょう
+  - APIのリソース名は、3-2で作成したAPIのリソース名（例：analysis）に変更しましょう
 　- 今回はデータに `threshold`が不要です
 
 
@@ -145,7 +145,31 @@ sh curl_analysis_test_format.sh
 ・・・（省略）・・・
 ```
 
-## 3-4. デバイスからプログラムでWeb APIを利用する
+## 3-4. スマホ画面から顔画像分析を実行する
 
-[修正中]
-Webアプリケーション内でステップ2-3を参考に....
+前のステップで解説したWebアプリケーションを実際に動かして顔画像分析処理を実行します。
+
+- 左上のメニューをクリックして「顔画像分析」を選択する
+![3-4_1](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step3/3-4_1.png)
+
+- 右上のボタンをクリックし、設定項目を入力する
+![3-4_2](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step3/3-4_2.png)
+
+- API ID、リージョン、ステージ名、リソース名、APIキーを入力します。
+![3-4_3](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step3/3-4_3.png)
+
+- 最後に[保存]ボタンをクリックします。
+
+- [画像ファイルを選択]をクリックし、スマホで写真を撮影するか、顔認証を行いたい画像を選択する
+![3-4_4](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step3/3-4_4.png)
+
+- 画像はJPEG形式もしくはPNG形式のものを選択してください。画像のプレビューが表示されたら、[顔画像分析実行]をクリックします。
+![3-4_5](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step3/3-4_5.png)
+
+- 実行結果を確認する
+画像の下に、顔画像分析結果が表形式で表示されます。
+また、各項目ごとの信頼度も表示されます。
+![3-4_6](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/step3/3-4_6.png)
+
+最後に、AWSのコンソールに移動し、CloudWatchでAPIへのアクセス履歴やLambdaのログを確認してみましょう。
+

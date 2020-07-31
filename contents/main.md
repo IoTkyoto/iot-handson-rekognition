@@ -59,7 +59,7 @@
 
 **以下のコンテンツを開き、ステップ0を進めてください**
 ※コンテンツは右クリックから新規タブで開いてください
-https://qiita.com/kyoso_bizdev/private/ee41996956d6a877da3a
+https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step0.md
 
 # ステップ1. 顔認識用のコレクションを作成する
 
@@ -73,7 +73,7 @@ AWSのCLI(コマンド・ライン・インターフェース)ツールを使っ
 
 **以下のコンテンツを開き、ステップ1を進めてください**
 ※コンテンツは右クリックから新規タブで開いてください
-https://qiita.com/kyoso_bizdev/private/5e6f2ababb5ae0364237
+https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step1.md
 
 # ステップ2. 顔認証のWeb APIを作成する
 
@@ -81,7 +81,7 @@ https://qiita.com/kyoso_bizdev/private/5e6f2ababb5ae0364237
 
 **以下のコンテンツを開き、ステップ2を進めてください**
 ※コンテンツは右クリックから新規タブで開いてください
-https://qiita.com/kyoso_bizdev/private/2039647205a887529f17
+https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step2.md
 
 # ステップ3. 顔画像分析結果を取得するWeb APIを作成する
 
@@ -90,7 +90,7 @@ https://qiita.com/kyoso_bizdev/private/2039647205a887529f17
 
 **以下のコンテンツを開き、ステップ3を進めてください**
 ※コンテンツは右クリックから新規タブで開いてください
-https://qiita.com/kyoso_bizdev/private/06519633538dcd8d6234
+https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step3.md
 
 # ステップ4. ログデータをクラウドにアップロードする
 
@@ -103,7 +103,7 @@ https://qiita.com/kyoso_bizdev/private/06519633538dcd8d6234
 
 **以下のコンテンツを開き、ステップ4を進めてください**
 ※コンテンツは右クリックから新規タブで開いてください
-https://qiita.com/kyoso_bizdev/private/7d99057e301bcfd98092
+https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step4.md
 
 # ステップ5. ログデータの可視化を行う
 
@@ -112,7 +112,7 @@ https://qiita.com/kyoso_bizdev/private/7d99057e301bcfd98092
 
 **以下のコンテンツを開き、ステップ5を進めてください**
 ※コンテンツは右クリックから新規タブで開いてください
-https://qiita.com/kyoso_bizdev/private/21acd6fbee34371e8915
+https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step5.md
 
 # さいごに
 

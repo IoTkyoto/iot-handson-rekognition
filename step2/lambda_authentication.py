@@ -12,7 +12,7 @@ import base64
 
 REKOGNITION_CLIENT = boto3.client('rekognition')
 # Rekognitionで作成したコレクション名を入れてください
-COLLECTION_ID = 'yamada-authentication-collection'
+COLLECTION_ID = '{collection_id}'
 # Rekognitionで一度に検出したい顔の最大数（最大4096人まで可）
 MAX_FACES = 10
 
