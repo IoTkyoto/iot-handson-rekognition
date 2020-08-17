@@ -5,4 +5,4 @@ IoT.kyotoのRekognitionハンズオンコンテンツ用リポジトリ
 ![全体アーキテクチャ図](https://s3.amazonaws.com/docs.iot.kyoto/img/Rekognition-Handson/architecture_overall.png)
 
 
-ハンズオンページは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/main.md)
+ハンズオンページは[こちら](https://iotkyoto.github.io/iot-handson-rekognition/)
