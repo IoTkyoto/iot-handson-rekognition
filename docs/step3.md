@@ -1,6 +1,6 @@
 # ステップ3. 顔画像分析結果を取得するWeb APIを作成する（スマートフォンとAWSサービスを用いた画像認識サービスの構築する）
 
-*当コンテンツは、エッジデバイスとしてスマートフォン、クラウドサービスとしてAWSを利用し、エッジデバイスとクラウド間とのデータ連携とAWSサービスを利用した画像認識を体験し、IoT/画像認識システムの基礎的な技術の習得を目指す方向けのハンズオン(体験学習)コンテンツ「[スマートフォンとAWSサービスを用いた画像認識サービスの構築する](https://qiita.com/kyoso_bizdev/private/e5c252f08de019ab8a1b)」の一部です。*
+*当コンテンツは、エッジデバイスとしてスマートフォン、クラウドサービスとしてAWSを利用し、エッジデバイスとクラウド間とのデータ連携とAWSサービスを利用した画像認識を体験し、IoT/画像認識システムの基礎的な技術の習得を目指す方向けのハンズオン(体験学習)コンテンツ「[スマートフォンとAWSサービスを用いた画像認識サービスの構築する](https://iotkyoto.github.io/iot-handson-rekognition)」の一部です。*
 
 # ステップ3. 顔画像分析結果を取得するWeb APIを作成する
 
@@ -121,7 +121,7 @@ import base64                     # base64フォーマットの画像データ�
 
 - 最後に、ステップ2-2-8を参考に、cURLでAPIをテストしましょう。
 
-- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step3/curl_test_analysis_format.sh)の `curl_test_analysis_format.sh`をご確認ください。
+- shellファイルは[こちら](https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/step3/curl_analysis_test_format.sh)の `curl_analysis_test_format.sh`をご確認ください。
 
 - 以下、ステップ2-2-8との相違点です
   - APIのリソース名は、3-2で作成したAPIのリソース名（例：analysis）に変更しましょう

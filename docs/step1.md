@@ -1,6 +1,6 @@
 # ステップ1. 顔認識用のコレクションを作成する（スマートフォンとAWSサービスを用いた画像認識サービスの構築する）
 
-*当コンテンツは、エッジデバイスとしてスマートフォン、クラウドサービスとしてAWSを利用し、エッジデバイスとクラウド間とのデータ連携とAWSサービスを利用した画像認識を体験し、IoT/画像認識システムの基礎的な技術の習得を目指す方向けのハンズオン(体験学習)コンテンツ「[スマートフォンとAWSサービスを用いた画像認識サービスの構築する](https://qiita.com/kyoso_bizdev/private/e5c252f08de019ab8a1b)」の一部です。*
+*当コンテンツは、エッジデバイスとしてスマートフォン、クラウドサービスとしてAWSを利用し、エッジデバイスとクラウド間とのデータ連携とAWSサービスを利用した画像認識を体験し、IoT/画像認識システムの基礎的な技術の習得を目指す方向けのハンズオン(体験学習)コンテンツ「[スマートフォンとAWSサービスを用いた画像認識サービスの構築する](https://iotkyoto.github.io/iot-handson-rekognition)」の一部です。*
 
 # ステップ1. 顔認識用のコレクションを作成する
 
@@ -221,16 +221,13 @@ S3バケットのパブリックアクセスが原因となった顧客情報の
 - AWSコンソールからステップ0-2で作成したCloud9を開いてください
 - ターミナル上で以下のコマンドを実行しコレクションを作成してください
   コマンドの詳細は、公式ドキュメント「[コレクションの作成](https://docs.aws.amazon.com/ja_jp/rekognition/latest/dg/create-collection-procedure.html)」をご確認ください。
-
 ```shell:実行コマンド例
-# collection-id の引数は任意のコレクション名にしてください
 $ aws rekognition create-collection --collection-id "yamada-authentication-collection"
 ```
+*※ collection-id の引数は任意のコレクション名にしてください*
 
 - 出力結果が以下のようにStatusCodeが200となれば、コレクションが正常に作成できています
-
 ```shell:実行結果
-$ aws rekognition create-collection --collection-id "yamada-authentication-collection"
 {
     "StatusCode": 200,
     "CollectionArn": "aws:rekognition:ap-northeast-1:XXXXXXXXXXXX:collection/yamada-authentication-collection",
@@ -343,7 +340,7 @@ $aws rekognition list-faces --collection-id yamada-authentication-collection
 ```shell:実行コマンド例
 $ aws rekognition search-faces-by-image \
 --image '{"S3Object":{"Bucket":"yamada-rekognition-collection-source","Name":"Taro_Yamada.jpg"}}' \
---collection-id "yamada-authentication-collection"
+--collection-id yamada-authentication-collection
 ```
 
 - **パラメーターの説明**
