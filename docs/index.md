@@ -57,9 +57,9 @@
 今回のハンズオンでは、エッジデバイスであるスマートフォンと、クラウド環境の構築やその他必要な作業を行うためのローカルPCが必要です。
 ハンズオンを進めるにあたって必要な準備作業について説明します。
 
-**以下のコンテンツを開き、ステップ0を進めてください**
-※コンテンツは右クリックから新規タブで開いてください
-https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step0.md
+**以下のコンテンツを開き、ステップ0を進めてください**  
+[ステップ０へ](https://iotkyoto.github.io/iot-handson-rekognition/step0)
+※コンテンツは右クリックから新規タブで開くことをお勧めします
 
 # ステップ1. 顔認識用のコレクションを作成する
 
@@ -70,27 +70,26 @@ AWS Rekognitionサービスでは、コレクションの情報を使って、�
 
 AWSのCLI(コマンド・ライン・インターフェース)ツールを使って、「**[Amazon Rekognition（以下、Rekognition）](https://aws.amazon.com/jp/rekognition/)**」の「コレクション」を作成し、認識対象となる顔を登録します。
 
-
-**以下のコンテンツを開き、ステップ1を進めてください**
-※コンテンツは右クリックから新規タブで開いてください
-https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step1.md
+**以下のコンテンツを開き、ステップ１を進めてください**  
+[ステップ１へ](https://iotkyoto.github.io/iot-handson-rekognition/step1)
+※コンテンツは右クリックから新規タブで開くことをお勧めします
 
 # ステップ2. 顔認証のWeb APIを作成する
 
 ステップ2では、前ステップでS3バケットにアップロードされた画像を分析し「事前登録済みの人物が写っているかを判定し、写っている場合は誰なのかを判定する」という機能を持ったWeb APIを作成し、デバイス側からAPIを呼び出す仕組みを構築します。
 
-**以下のコンテンツを開き、ステップ2を進めてください**
-※コンテンツは右クリックから新規タブで開いてください
-https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step2.md
+**以下のコンテンツを開き、ステップ２を進めてください**  
+[ステップ２へ](https://iotkyoto.github.io/iot-handson-rekognition/step2)
+※コンテンツは右クリックから新規タブで開くことをお勧めします
 
 # ステップ3. 顔画像分析結果を取得するWeb APIを作成する
 
 ステップ３では「画像に写っている人物の顔の特徴を分析する」機能を持ったWeb APIを作成し、デバイス側からAPIを呼び出す仕組みを構築します。
 ステップ2の内容を参考にして仕組みを構築してください。詳細な手順は記載せず、実装のヒントのみ記載しております。
 
-**以下のコンテンツを開き、ステップ3を進めてください**
-※コンテンツは右クリックから新規タブで開いてください
-https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step3.md
+**以下のコンテンツを開き、ステップ３を進めてください**  
+[ステップ３へ](https://iotkyoto.github.io/iot-handson-rekognition/step3)
+※コンテンツは右クリックから新規タブで開くことをお勧めします
 
 # ステップ4. ログデータをクラウドにアップロードする
 
@@ -101,18 +100,18 @@ https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step3.m
 
 今回の手順では、先にデータの格納先を準備し、次にルールを作成、最後にデバイスからログデータを送信するプログラムを作成します。
 
-**以下のコンテンツを開き、ステップ4を進めてください**
-※コンテンツは右クリックから新規タブで開いてください
-https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step4.md
+**以下のコンテンツを開き、ステップ４を進めてください**  
+[ステップ４へ](https://iotkyoto.github.io/iot-handson-rekognition/step4)
+※コンテンツは右クリックから新規タブで開くことをお勧めします
 
 # ステップ5. ログデータの可視化を行う
 
 ステップ5では、今までのステップで収集しクラウドに保存したデータを可視化します。
 今回のハンズオンでは、AWSが提供している高速なBIサービス「**Amazon QuickSight**（以下、QuickSight）」を使用しデータの可視化を行います。
 
-**以下のコンテンツを開き、ステップ5を進めてください**
-※コンテンツは右クリックから新規タブで開いてください
-https://github.com/IoTkyoto/iot-handson-rekognition/blob/master/contents/step5.md
+**以下のコンテンツを開き、ステップ５を進めてください**  
+[ステップ５へ](https://iotkyoto.github.io/iot-handson-rekognition/step5)
+※コンテンツは右クリックから新規タブで開くことをお勧めします
 
 # さいごに
 
